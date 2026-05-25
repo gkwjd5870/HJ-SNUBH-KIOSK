@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>키오스크 체험 훈련</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body, #root { margin: 0; width: 100%; min-height: 100%; }
+    body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+    button, input, select, textarea { font-family: inherit; }
+  </style>
+
+  <!-- React / ReactDOM CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone CDN: 브라우저에서 JSX를 직접 변환 -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+const { useState } = React;
+
+// ─── 색상 테마 ────────────────────────────────────────────────
+const THEMES = {
+  fastfood: { primary:"#E8001D", secondary:"#FFA500", bg:"#FFF8F0", header:"#E8001D", accent:"#FF6B00", label:"패스트푸드", emoji:"🍔" },
+  bank:     { primary:"#003087", secondary:"#0066CC", bg:"#F0F4FF", header:"#003087", accent:"#FFD700", label:"은행",       emoji:"🏦" },
+  pharmacy: { primary:"#00874A", secondary:"#00B760", bg:"#F0FFF8", header:"#00874A", accent:"#00B760", label:"약국",       emoji:"💊" },
+  hospital: { primary:"#0077B6", secondary:"#00B4D8", bg:"#F0F8FF", header:"#0077B6", accent:"#48CAE4", label:"병원",       emoji:"🏥" },
+};
+
+// ─── 토핑 데이터 ──────────────────────────────────────────────
+const TOPPING_GROUPS = [
+  { groupId:"veg",    groupName:"야채",      emoji:"🥬", items:[
+    { id:"lettuce",  name:"양상추",   emoji:"🥬", price:0,    kcal:2,  defaultOn:true  },
+    { id:"onion",    name:"양파",     emoji:"🧅", price:0,    kcal:3,  defaultOn:true  },
+    { id:"tomato",   name:"토마토",   emoji:"🍅", price:0,    kcal:5,  defaultOn:true  },
+    { id:"pickle",   name:"피클",     emoji:"🥒", price:0,    kcal:2,  defaultOn:true  },
+    { id:"jalapeno", name:"할라피뇨", emoji:"🌶️", price:300,  kcal:4,  defaultOn:false },
+  ]},
+  { groupId:"cheese", groupName:"치즈",      emoji:"🧀", items:[
+    { id:"slice_cheese", name:"슬라이스치즈", emoji:"🧀", price:300,  kcal:43, defaultOn:false },
+    { id:"cheddar",      name:"체다치즈",     emoji:"🧀", price:400,  kcal:50, defaultOn:false },
+    { id:"mozzarella",   name:"모짜렐라",     emoji:"🫕", price:500,  kcal:60, defaultOn:false },
+  ]},
+  { groupId:"sauce",  groupName:"소스",      emoji:"🍶", items:[
+    { id:"ketchup", name:"케첩",         emoji:"🍅", price:0,    kcal:15, defaultOn:true  },
+    { id:"mustard", name:"머스타드",     emoji:"🌼", price:0,    kcal:10, defaultOn:false },
+    { id:"mayo",    name:"마요네즈",     emoji:"🥚", price:0,    kcal:30, defaultOn:false },
+    { id:"bbq",     name:"BBQ소스",      emoji:"🔥", price:200,  kcal:25, defaultOn:false },
+    { id:"spicy",   name:"스파이시소스", emoji:"🌶️", price:200,  kcal:20, defaultOn:false },
+    { id:"ranch",   name:"랜치소스",     emoji:"🥛", price:200,  kcal:35, defaultOn:false },
+  ]},
+  { groupId:"extra",  groupName:"추가재료",  emoji:"➕", items:[
+    { id:"patty",   name:"패티추가",    emoji:"🥩", price:1500, kcal:200, defaultOn:false },
+    { id:"bacon",   name:"베이컨",      emoji:"🥓", price:800,  kcal:80,  defaultOn:false },
+    { id:"egg",     name:"달걀프라이",  emoji:"🍳", price:700,  kcal:90,  defaultOn:false },
+    { id:"avocado", name:"아보카도",    emoji:"🥑", price:1000, kcal:80,  defaultOn:false },
+  ]},
+];
+
+const MENU_DEFAULT_TOPPINGS = {
+  1: { lettuce:true,  onion:true,  tomato:true,  pickle:true,  jalapeno:false, slice_cheese:false, cheddar:false, mozzarella:false, ketchup:true,  mustard:false, mayo:false, bbq:false, spicy:false, ranch:false, patty:false, bacon:false, egg:false, avocado:false },
+  2: { lettuce:true,  onion:true,  tomato:false, pickle:true,  jalapeno:false, slice_cheese:false, cheddar:false, mozzarella:false, ketchup:false, mustard:false, mayo:true,  bbq:false, spicy:false, ranch:false, patty:false, bacon:false, egg:false, avocado:false },
+  3: { lettuce:true,  onion:false, tomato:true,  pickle:false, jalapeno:false, slice_cheese:false, cheddar:false, mozzarella:false, ketchup:false, mustard:false, mayo:false, bbq:false, spicy:false, ranch:true,  patty:false, bacon:false, egg:false, avocado:false },
+  4: { lettuce:false, onion:true,  tomato:false, pickle:true,  jalapeno:false, slice_cheese:true,  cheddar:false, mozzarella:false, ketchup:true,  mustard:true,  mayo:false, bbq:false, spicy:false, ranch:false, patty:false, bacon:false, egg:false, avocado:false },
+};
+const HAS_TOPPINGS = { 1:true, 2:true, 3:true, 4:true, 5:false, 6:false };
+
+function initToppings(menuId) {
+  const d = MENU_DEFAULT_TOPPINGS[menuId];
+  if (d) return { ...d };
+  const s = {};
+  TOPPING_GROUPS.forEach(g => g.items.forEach(i => { s[i.id] = false; }));
+  return s;
+}
+function calcToppingExtra(toppings) {
+  let extra = 0;
+  TOPPING_GROUPS.forEach(g => g.items.forEach(i => { if (toppings[i.id] && i.price > 0) extra += i.price; }));
+  return extra;
+}
+function toppingSummaryShort(toppings, menuId) {
+  const d = MENU_DEFAULT_TOPPINGS[menuId] || {};
+  const added = [], removed = [];
+  TOPPING_GROUPS.forEach(g => g.items.forEach(i => {
+    if (!d[i.id] && toppings[i.id]) added.push(i.name);
+    if (d[i.id] && !toppings[i.id]) removed.push(`${i.name} 제외`);
+  }));
+  const parts = [...removed, ...added];
+  return parts.length ? parts.join(", ") : "기본 구성";
+}
+function toppingSummary(toppings, menuId) {
+  const d = MENU_DEFAULT_TOPPINGS[menuId] || {};
+  const added = [], removed = [], kept = [];
+  TOPPING_GROUPS.forEach(g => g.items.forEach(i => {
+    if (!d[i.id] && toppings[i.id]) added.push(i.name);
+    else if (d[i.id] && !toppings[i.id]) removed.push(i.name);
+    else if (d[i.id] && toppings[i.id]) kept.push(i.name);
+  }));
+  const parts = [];
+  if (kept.length) parts.push(kept.join(", "));
+  if (added.length) parts.push(`추가: ${added.join(", ")}`);
+  if (removed.length) parts.push(`제외: ${removed.join(", ")}`);
+  return parts.length ? parts.join(" · ") : "기본 구성";
+}
+
+// ─── 패스트푸드 키오스크 ─────────────────────────────────────
+const FastFoodKiosk = ({ onBack, theme }) => {
+  const [step, setStep] = useState(0);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [toppings, setToppings] = useState({});
+  const [activeGroup, setActiveGroup] = useState("veg");
+  const [cart, setCart] = useState([]);
+  const [payMethod, setPayMethod] = useState(null);
+  const [orderType, setOrderType] = useState(null);
+  const t = theme;
+
+  const BurgerSVG = ({ type, size = 72 }) => {
+    const cfg = {
+      bulgogi:{ bunTop:"#D4852A", patty:"#8B3A0F", pattyS:"#A0440F", sauce:"#CC3300", cheese:null  },
+      chicken:{ bunTop:"#D4852A", patty:"#C8860A", pattyS:"#D89A1A", sauce:"#F5A623", cheese:null  },
+      shrimp: { bunTop:"#D4852A", patty:"#E8734A", pattyS:"#F08060", sauce:"#F0C060", cheese:null  },
+      cheese: { bunTop:"#D4852A", patty:"#8B3A0F", pattyS:"#A0440F", sauce:"#CC3300", cheese:"#F5C842"},
+    };
+    const c = cfg[type] || cfg.bulgogi;
+    const cy = c.cheese ? 48 : 44;
+    return (
+      <svg width={size} height={size*0.82} viewBox="0 0 100 82" fill="none">
+        <ellipse cx="50" cy="14" rx="34" ry="14" fill="#E8983A"/>
+        <ellipse cx="50" cy="18" rx="36" ry="17" fill={c.bunTop}/>
+        <ellipse cx="38" cy="10" rx="10" ry="5" fill="rgba(255,255,255,0.18)"/>
+        {["42,9","54,7","62,12","35,14"].map((p,i)=>{const[cx,cy]=p.split(",");return <ellipse key={i} cx={cx} cy={cy} rx="2.5" ry="1.2" fill="#F5E6C8"/>})}
+        <rect x="10" y="36" width="80" height="6" rx="3" fill="#3A8C2F"/>
+        <path d="M10 39 Q20 34 30 39 Q40 44 50 39 Q60 34 70 39 Q80 44 90 39" stroke="#2E7024" strokeWidth="2" fill="none"/>
+        {c.cheese && <rect x="12" y="43" width="76" height="5" rx="2" fill={c.cheese} opacity="0.9"/>}
+        <rect x="12" y={cy} width="76" height="12" rx="6" fill={c.patty}/>
+        <rect x="14" y={cy+1} width="72" height="5" rx="4" fill={c.pattyS} opacity="0.5"/>
+        <path d={`M12 ${cy-1} Q30 ${cy-7} 50 ${cy-1} Q70 ${cy+5} 88 ${cy-1}`} stroke={c.sauce} strokeWidth="3" fill="none" strokeLinecap="round"/>
+        <ellipse cx="50" cy="63" rx="38" ry="8" fill="#D8882E"/>
+        <ellipse cx="50" cy="66" rx="38" ry="10" fill="#C4751A"/>
+      </svg>
+    );
+  };
+
+  const menuItems = [
+    { id:1, name:"불고기버거",      price:5500, kcal:490, svgType:"bulgogi", tag:"인기",   desc:"달콤한 불고기 패티" },
+    { id:2, name:"치킨버거",        price:6200, kcal:530, svgType:"chicken", tag:"신메뉴", desc:"바삭한 치킨 필렛"   },
+    { id:3, name:"새우버거",        price:6800, kcal:460, svgType:"shrimp",  tag:"인기",   desc:"통새우 패티"         },
+    { id:4, name:"치즈버거",        price:5000, kcal:510, svgType:"cheese",  tag:"",       desc:"두툼한 비프 패티"   },
+    { id:5, name:"프렌치프라이(L)", price:2800, kcal:380, emoji:"🍟",        tag:"사이드", desc:"바삭한 감자튀김"     },
+    { id:6, name:"콜라(L)",         price:2400, kcal:200, emoji:"🥤",        tag:"음료",   desc:"시원한 코카콜라"     },
+  ];
+
+  const itemTotal = (item) => (item.basePrice + (item.toppingExtra || 0)) * item.qty;
+  const totalPrice = cart.reduce((s, i) => s + itemTotal(i), 0);
+  const totalCartItems = cart.reduce((s, c) => s + c.qty, 0);
+
+  const addToCartWithToppings = (item, tops) => {
+    const toppingExtra = HAS_TOPPINGS[item.id] ? calcToppingExtra(tops) : 0;
+    const summary = HAS_TOPPINGS[item.id] ? toppingSummaryShort(tops, item.id) : null;
+    const key = item.id + "_" + JSON.stringify(tops);
+    setCart(prev => {
+      const exist = prev.find(c => c.cartKey === key);
+      if (exist) return prev.map(c => c.cartKey === key ? { ...c, qty: c.qty+1 } : c);
+      return [...prev, { ...item, cartKey:key, basePrice:item.price, toppingExtra, toppingSummary:summary, toppingState:tops, qty:1 }];
+    });
+  };
+  const removeFromCart = (cartKey) => {
+    setCart(prev => {
+      const e = prev.find(c => c.cartKey === cartKey);
+      if (!e) return prev;
+      if (e.qty === 1) return prev.filter(c => c.cartKey !== cartKey);
+      return prev.map(c => c.cartKey === cartKey ? { ...c, qty:c.qty-1 } : c);
+    });
+  };
+
+  const StepBar = ({ current, steps }) => (
+    <div style={{ display:"flex", alignItems:"center", gap:3, padding:"9px 12px", background:"#111", justifyContent:"center" }}>
+      {steps.map((s,i) => (
+        <div key={i} style={{ display:"flex", alignItems:"center", gap:2 }}>
+          <div style={{ width:22, height:22, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background:i<=current?t.primary:"#444", color:"#fff", fontSize:10, fontWeight:700, border:i===current?`2px solid ${t.secondary}`:"2px solid transparent" }}>{i+1}</div>
+          <span style={{ color:i<=current?"#fff":"#666", fontSize:9, whiteSpace:"nowrap" }}>{s}</span>
+          {i<steps.length-1 && <span style={{ color:"#444", margin:"0 1px", fontSize:11 }}>›</span>}
+        </div>
+      ))}
+    </div>
+  );
+
+  // 0단계: 홈
+  if (step === 0) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:18, padding:"30px 20px" }}>
+        <div style={{ fontSize:68 }}>🍔</div>
+        <h1 style={{ color:"#fff", fontSize:28, fontWeight:900, margin:0 }}>맛있는 버거</h1>
+        <p style={{ color:"rgba(255,255,255,0.8)", fontSize:14, margin:0 }}>주문 방식을 선택해주세요</p>
+        <div style={{ display:"flex", gap:14, width:"100%", maxWidth:300, marginTop:8 }}>
+          {[{label:"매장식사",emoji:"🍽️",value:"dine"},{label:"포장주문",emoji:"🛍️",value:"take"}].map(o=>(
+            <button key={o.value} onClick={()=>{ setOrderType(o.value); setStep(1); }}
+              style={{ flex:1, padding:"26px 10px", background:"#fff", border:"none", borderRadius:16, cursor:"pointer", fontWeight:700, color:t.primary, display:"flex", flexDirection:"column", alignItems:"center", gap:8, boxShadow:"0 4px 20px rgba(0,0,0,0.2)", fontSize:16 }}
+              onMouseDown={e=>e.currentTarget.style.transform="scale(0.97)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
+              <span style={{ fontSize:32 }}>{o.emoji}</span><span>{o.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ padding:14, background:"#fff", textAlign:"center" }}>
+        <button onClick={onBack} style={{ background:"none", border:`2px solid ${t.primary}`, color:t.primary, padding:"9px 28px", borderRadius:30, cursor:"pointer", fontWeight:700, fontSize:13 }}>← 키오스크 선택으로</button>
+      </div>
+    </div>
+  );
+
+  // 1단계: 메뉴 선택
+  if (step === 1) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <StepBar current={0} steps={["메뉴선택","재료변경","주문확인","결제","완료"]}/>
+      <div style={{ background:t.header, padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>메뉴를 선택해주세요</span>
+        {totalCartItems>0 && (
+          <button onClick={()=>setStep(3)} style={{ background:t.accent, color:"#fff", border:"none", borderRadius:20, padding:"6px 12px", fontWeight:700, cursor:"pointer", fontSize:11 }}>
+            장바구니 {totalCartItems}개 · {totalPrice.toLocaleString()}원 ›
+          </button>
+        )}
+      </div>
+      <div style={{ flex:1, overflow:"auto", padding:10, background:t.bg, display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+        {menuItems.map(item=>{
+          const inCart = cart.filter(c=>c.id===item.id).reduce((s,c)=>s+c.qty,0);
+          return (
+            <button key={item.id} onClick={()=>{ setSelectedItem(item); setToppings(initToppings(item.id)); setActiveGroup("veg"); setStep(HAS_TOPPINGS[item.id]?1.5:1.8); }}
+              style={{ background:"#fff", border:inCart?`2px solid ${t.primary}`:"2px solid transparent", borderRadius:13, padding:"13px 9px", cursor:"pointer", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.07)", position:"relative", transition:"all 0.15s" }}>
+              {item.tag && <span style={{ position:"absolute", top:6, left:6, background:item.tag==="신메뉴"?t.secondary:t.primary, color:"#fff", fontSize:9, padding:"2px 5px", borderRadius:6, fontWeight:700 }}>{item.tag}</span>}
+              {inCart>0 && <span style={{ position:"absolute", top:6, right:6, background:t.primary, color:"#fff", fontSize:10, width:19, height:19, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>{inCart}</span>}
+              <div style={{ height:56, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:5 }}>
+                {item.svgType ? <BurgerSVG type={item.svgType} size={68}/> : <span style={{ fontSize:40 }}>{item.emoji}</span>}
+              </div>
+              <div style={{ fontWeight:700, fontSize:12, color:"#222", marginBottom:2 }}>{item.name}</div>
+              <div style={{ color:"#999", fontSize:9, marginBottom:3 }}>{item.desc}</div>
+              <div style={{ color:t.primary, fontWeight:800, fontSize:13 }}>{item.price.toLocaleString()}원~</div>
+              {HAS_TOPPINGS[item.id] && <div style={{ marginTop:3, fontSize:9, color:"#bbb" }}>재료 변경 가능</div>}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ padding:11, background:"#fff", borderTop:"1px solid #eee", display:"flex", gap:8 }}>
+        <button onClick={()=>setStep(0)} style={{ flex:1, padding:12, background:"#555", color:"#fff", border:"none", borderRadius:10, fontWeight:700, cursor:"pointer" }}>← 뒤로</button>
+        {totalCartItems>0 && (
+          <button onClick={()=>setStep(3)} style={{ flex:2, padding:12, background:t.primary, color:"#fff", border:"none", borderRadius:10, fontWeight:700, cursor:"pointer", fontSize:13 }}>
+            주문확인 ({totalPrice.toLocaleString()}원) →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // 1.5단계: 토핑 커스터마이징
+  if (step === 1.5 && selectedItem) {
+    const toppingExtra = calcToppingExtra(toppings);
+    const finalPrice = selectedItem.price + toppingExtra;
+    const currentGroup = TOPPING_GROUPS.find(g=>g.groupId===activeGroup);
+    const defaults = MENU_DEFAULT_TOPPINGS[selectedItem.id] || {};
+    const changedCount = Object.keys(toppings).filter(k=>!!toppings[k]!==!!defaults[k]).length;
+    return (
+      <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#f7f7f7" }}>
+        <StepBar current={1} steps={["메뉴선택","재료변경","주문확인","결제","완료"]}/>
+        <div style={{ background:t.header, padding:"9px 13px", display:"flex", alignItems:"center", gap:9 }}>
+          <button onClick={()=>setStep(1)} style={{ background:"rgba(255,255,255,0.2)", border:"none", color:"#fff", borderRadius:8, padding:"5px 9px", cursor:"pointer", fontSize:15, fontWeight:700 }}>←</button>
+          <div style={{ flex:1 }}>
+            <div style={{ color:"#fff", fontWeight:800, fontSize:14 }}>{selectedItem.name} — 재료변경</div>
+            <div style={{ color:"rgba(255,255,255,0.75)", fontSize:10 }}>{changedCount>0?`${changedCount}가지 변경됨`:"기본 구성"}</div>
+          </div>
+          <div style={{ textAlign:"right" }}>
+            <div style={{ color:"#fff", fontWeight:900, fontSize:16 }}>{finalPrice.toLocaleString()}원</div>
+            {toppingExtra>0 && <div style={{ color:"#FFD580", fontSize:10, fontWeight:700 }}>+{toppingExtra.toLocaleString()}원</div>}
+          </div>
+        </div>
+        {/* 버거 미리보기 */}
+        <div style={{ background:"#fff", padding:"10px 14px 8px", borderBottom:"1px solid #eee", display:"flex", alignItems:"center", gap:13 }}>
+          <div style={{ flexShrink:0 }}><BurgerSVG type={selectedItem.svgType} size={78}/></div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:10, color:"#aaa", marginBottom:4 }}>현재 구성</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+              {TOPPING_GROUPS.flatMap(g=>g.items).filter(it=>toppings[it.id]).map(it=>{
+                const isNew = !defaults[it.id];
+                return <span key={it.id} style={{ fontSize:9, padding:"2px 6px", borderRadius:9, fontWeight:700, background:isNew?t.primary:"#f0f0f0", color:isNew?"#fff":"#555", border:isNew?"none":"1px solid #ddd" }}>{isNew&&"+"}{it.name}</span>;
+              })}
+              {TOPPING_GROUPS.flatMap(g=>g.items).filter(it=>!toppings[it.id]&&defaults[it.id]).map(it=>(
+                <span key={it.id} style={{ fontSize:9, padding:"2px 6px", borderRadius:9, fontWeight:700, background:"#fff0f0", color:"#cc3300", border:"1px solid #ffcccc", textDecoration:"line-through" }}>{it.name}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* 카테고리 탭 */}
+        <div style={{ display:"flex", background:"#fff", borderBottom:"2px solid #eee" }}>
+          {TOPPING_GROUPS.map(g=>{
+            const cnt = g.items.filter(it=>toppings[it.id]).length;
+            return (
+              <button key={g.groupId} onClick={()=>setActiveGroup(g.groupId)}
+                style={{ flex:1, padding:"8px 4px", background:"none", border:"none", borderBottom:activeGroup===g.groupId?`3px solid ${t.primary}`:"3px solid transparent", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:1, position:"relative" }}>
+                {cnt>0 && <span style={{ position:"absolute", top:3, right:"18%", background:t.primary, color:"#fff", borderRadius:"50%", width:13, height:13, fontSize:8, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center" }}>{cnt}</span>}
+                <span style={{ fontSize:17 }}>{g.emoji}</span>
+                <span style={{ fontSize:9, fontWeight:activeGroup===g.groupId?800:500, color:activeGroup===g.groupId?t.primary:"#999" }}>{g.groupName}</span>
+              </button>
+            );
+          })}
+        </div>
+        {/* 토핑 그리드 */}
+        <div style={{ flex:1, overflow:"auto", padding:9 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7 }}>
+            {currentGroup && currentGroup.items.map(item=>{
+              const isOn = !!toppings[item.id];
+              const wasDefault = !!defaults[item.id];
+              const isNew = isOn && !wasDefault;
+              const isRemoved = !isOn && wasDefault;
+              return (
+                <button key={item.id} onClick={()=>setToppings(prev=>({...prev,[item.id]:!prev[item.id]}))}
+                  style={{ background:isOn?(isNew?`${t.primary}18`:"#f5fff5"):(isRemoved?"#fff5f5":"#fff"), border:isOn?`2px solid ${isNew?t.primary:"#4caf50"}`:`2px solid ${isRemoved?"#ffaaaa":"#e8e8e8"}`, borderRadius:11, padding:"11px 9px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, position:"relative", transition:"all 0.15s" }}>
+                  {isNew && <span style={{ position:"absolute", top:4, right:4, background:t.primary, color:"#fff", fontSize:7, padding:"1px 3px", borderRadius:3, fontWeight:800 }}>추가</span>}
+                  {isRemoved && <span style={{ position:"absolute", top:4, right:4, background:"#cc3300", color:"#fff", fontSize:7, padding:"1px 3px", borderRadius:3, fontWeight:800 }}>제외</span>}
+                  <div style={{ position:"absolute", top:4, left:4, width:16, height:16, borderRadius:"50%", background:isOn?(isNew?t.primary:"#4caf50"):"#e8e8e8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, color:"#fff", fontWeight:900 }}>{isOn?"✓":""}</div>
+                  <span style={{ fontSize:26, marginTop:3 }}>{item.emoji}</span>
+                  <div style={{ fontWeight:700, fontSize:11, color:isOn?"#111":"#777", textAlign:"center" }}>{item.name}</div>
+                  <div style={{ fontSize:9, color:"#bbb" }}>{item.kcal}kcal</div>
+                  {item.price>0
+                    ? <div style={{ fontSize:10, fontWeight:800, color:isOn?t.primary:"#ccc", background:isOn?`${t.primary}15`:"#f5f5f5", padding:"2px 7px", borderRadius:7 }}>+{item.price.toLocaleString()}원</div>
+                    : <div style={{ fontSize:9, color:isOn?"#4caf50":"#ccc", fontWeight:600 }}>{isOn?"✓ 포함":"빼기"}</div>
+                  }
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div style={{ background:"#fff", borderTop:"1px solid #eee", padding:"9px 11px" }}>
+          <div style={{ display:"flex", gap:7 }}>
+            <button onClick={()=>setToppings(initToppings(selectedItem.id))} style={{ flex:1, padding:"10px 0", background:"#f5f5f5", border:"none", color:"#666", borderRadius:9, fontWeight:700, cursor:"pointer", fontSize:11 }}>🔄 기본으로</button>
+            <button onClick={()=>{ addToCartWithToppings(selectedItem, toppings); setStep(1); }} style={{ flex:2.5, padding:"10px 0", background:t.primary, color:"#fff", border:"none", borderRadius:9, fontWeight:800, cursor:"pointer", fontSize:13 }}>담기 · {finalPrice.toLocaleString()}원 →</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 1.8단계: 사이드/음료
+  if (step === 1.8 && selectedItem) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:t.bg }}>
+      <div style={{ background:t.header, padding:"13px 14px", display:"flex", alignItems:"center", gap:9 }}>
+        <button onClick={()=>setStep(1)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 9px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>메뉴 확인</span>
+      </div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:22, gap:13 }}>
+        <div style={{ fontSize:72 }}>{selectedItem.emoji}</div>
+        <h2 style={{ margin:0, fontSize:22, fontWeight:800, color:"#222" }}>{selectedItem.name}</h2>
+        <p style={{ margin:0, color:"#888", fontSize:12 }}>{selectedItem.kcal}kcal · {selectedItem.desc}</p>
+        <div style={{ fontSize:26, fontWeight:900, color:t.primary }}>{selectedItem.price.toLocaleString()}원</div>
+        <div style={{ background:"#fff", borderRadius:13, padding:16, width:"100%", boxShadow:"0 2px 10px rgba(0,0,0,0.08)" }}>
+          <p style={{ margin:"0 0 11px", fontWeight:700, color:"#444", fontSize:14 }}>장바구니에 담으시겠습니까?</p>
+          <div style={{ display:"flex", gap:9 }}>
+            <button onClick={()=>setStep(1)} style={{ flex:1, padding:12, background:"#eee", border:"none", borderRadius:9, fontWeight:700, cursor:"pointer", color:"#555" }}>취소</button>
+            <button onClick={()=>{ addToCartWithToppings(selectedItem, {}); setStep(1); }} style={{ flex:2, padding:12, background:t.primary, color:"#fff", border:"none", borderRadius:9, fontWeight:700, cursor:"pointer", fontSize:13 }}>장바구니 담기 ✓</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 3단계: 주문 확인
+  if (step === 3) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <StepBar current={2} steps={["메뉴선택","재료변경","주문확인","결제","완료"]}/>
+      <div style={{ background:t.header, padding:"9px 14px" }}><span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>주문을 확인해주세요</span></div>
+      <div style={{ flex:1, overflow:"auto", padding:11, background:t.bg }}>
+        {cart.map(item=>(
+          <div key={item.cartKey} style={{ background:"#fff", borderRadius:11, padding:"11px 13px", marginBottom:7, boxShadow:"0 2px 6px rgba(0,0,0,0.06)" }}>
+            <div style={{ display:"flex", alignItems:"flex-start", gap:9 }}>
+              <div style={{ width:42, height:42, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {item.svgType ? <BurgerSVG type={item.svgType} size={46}/> : <span style={{ fontSize:30 }}>{item.emoji}</span>}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:700, fontSize:13, color:"#222" }}>{item.name}</div>
+                {item.toppingSummary && <div style={{ fontSize:10, color:"#999", marginTop:2, lineHeight:1.4 }}>{item.toppingSummary}</div>}
+                <div style={{ fontSize:11, color:t.primary, fontWeight:700, marginTop:3 }}>
+                  {(item.basePrice+(item.toppingExtra||0)).toLocaleString()}원
+                  {item.toppingExtra>0 && <span style={{ color:"#f59e0b", fontSize:10 }}> (+{item.toppingExtra.toLocaleString()}원)</span>}
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                <button onClick={()=>removeFromCart(item.cartKey)} style={{ width:26, height:26, borderRadius:"50%", border:`2px solid ${t.primary}`, background:"#fff", color:t.primary, fontWeight:700, cursor:"pointer", fontSize:14 }}>−</button>
+                <span style={{ fontWeight:700, fontSize:14, minWidth:16, textAlign:"center" }}>{item.qty}</span>
+                <button onClick={()=>setCart(prev=>prev.map(c=>c.cartKey===item.cartKey?{...c,qty:c.qty+1}:c))} style={{ width:26, height:26, borderRadius:"50%", border:"none", background:t.primary, color:"#fff", fontWeight:700, cursor:"pointer", fontSize:14 }}>+</button>
+              </div>
+            </div>
+            <div style={{ textAlign:"right", marginTop:5, fontWeight:700, color:"#444", fontSize:12 }}>소계: {((item.basePrice+(item.toppingExtra||0))*item.qty).toLocaleString()}원</div>
+          </div>
+        ))}
+        <div style={{ background:"#fff", borderRadius:11, padding:13, marginTop:3, boxShadow:"0 2px 6px rgba(0,0,0,0.06)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4, color:"#888", fontSize:12 }}><span>주문금액</span><span>{totalPrice.toLocaleString()}원</span></div>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4, color:"#888", fontSize:12 }}><span>할인금액</span><span>0원</span></div>
+          <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, fontSize:16, color:t.primary, borderTop:"2px solid #eee", paddingTop:7, marginTop:3 }}><span>총 결제금액</span><span>{totalPrice.toLocaleString()}원</span></div>
+        </div>
+      </div>
+      <div style={{ padding:11, background:"#fff", borderTop:"1px solid #eee", display:"flex", gap:7 }}>
+        <button onClick={()=>setStep(1)} style={{ flex:1, padding:12, background:"#555", color:"#fff", border:"none", borderRadius:9, fontWeight:700, cursor:"pointer" }}>← 뒤로</button>
+        <button onClick={()=>setStep(4)} style={{ flex:2, padding:12, background:t.primary, color:"#fff", border:"none", borderRadius:9, fontWeight:700, cursor:"pointer", fontSize:13 }}>결제하기 →</button>
+      </div>
+    </div>
+  );
+
+  // 4단계: 결제수단
+  if (step === 4) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <StepBar current={3} steps={["메뉴선택","재료변경","주문확인","결제","완료"]}/>
+      <div style={{ background:t.header, padding:"9px 14px" }}><span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>결제수단을 선택해주세요</span></div>
+      <div style={{ flex:1, padding:13, background:t.bg, display:"flex", flexDirection:"column", gap:9 }}>
+        {[{id:"card",label:"신용카드",emoji:"💳"},{id:"kakao",label:"카카오페이",emoji:"💛"},{id:"payco",label:"페이코",emoji:"🔴"},{id:"cash",label:"현금",emoji:"💵"}].map(m=>(
+          <button key={m.id} onClick={()=>setPayMethod(m.id)}
+            style={{ background:payMethod===m.id?t.primary:"#fff", color:payMethod===m.id?"#fff":"#333", border:payMethod===m.id?"none":"2px solid #ddd", borderRadius:11, padding:"15px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:13, fontSize:14, fontWeight:700, boxShadow:"0 2px 6px rgba(0,0,0,0.06)", transition:"all 0.15s" }}>
+            <span style={{ fontSize:24 }}>{m.emoji}</span><span>{m.label}</span>
+            {payMethod===m.id && <span style={{ marginLeft:"auto" }}>✓</span>}
+          </button>
+        ))}
+        <div style={{ background:"#fff", borderRadius:11, padding:13, boxShadow:"0 2px 6px rgba(0,0,0,0.06)", marginTop:3 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, fontSize:16, color:t.primary }}><span>총 결제금액</span><span>{totalPrice.toLocaleString()}원</span></div>
+        </div>
+      </div>
+      <div style={{ padding:11, background:"#fff", borderTop:"1px solid #eee", display:"flex", gap:7 }}>
+        <button onClick={()=>setStep(3)} style={{ flex:1, padding:12, background:"#555", color:"#fff", border:"none", borderRadius:9, fontWeight:700, cursor:"pointer" }}>← 뒤로</button>
+        <button onClick={()=>payMethod&&setStep(5)} style={{ flex:2, padding:12, background:payMethod?t.primary:"#ccc", color:"#fff", border:"none", borderRadius:9, fontWeight:700, cursor:payMethod?"pointer":"not-allowed", fontSize:13 }}>결제 →</button>
+      </div>
+    </div>
+  );
+
+  // 5단계: 완료
+  return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <StepBar current={4} steps={["메뉴선택","재료변경","주문확인","결제","완료"]}/>
+      <div style={{ flex:1, overflow:"auto", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:18, gap:13, background:t.bg }}>
+        <div style={{ fontSize:68 }}>✅</div>
+        <h2 style={{ margin:0, fontSize:22, fontWeight:900, color:"#222", textAlign:"center" }}>주문이 완료되었습니다!</h2>
+        <div style={{ background:"#fff", borderRadius:15, padding:18, width:"100%", boxShadow:"0 4px 16px rgba(0,0,0,0.1)", textAlign:"center" }}>
+          <div style={{ fontSize:34, fontWeight:900, color:t.primary, marginBottom:3 }}>대기번호</div>
+          <div style={{ fontSize:60, fontWeight:900, color:t.primary }}>23</div>
+          <p style={{ color:"#888", margin:"9px 0 0", fontSize:12 }}>번호가 호출되면 카운터에서 수령해주세요</p>
+        </div>
+        <div style={{ background:"#fff", borderRadius:11, padding:13, width:"100%", boxShadow:"0 2px 6px rgba(0,0,0,0.06)" }}>
+          <div style={{ fontWeight:700, marginBottom:7, color:"#444", fontSize:13 }}>주문 내역</div>
+          {cart.map(item=>(
+            <div key={item.cartKey} style={{ marginBottom:7, paddingBottom:7, borderBottom:"1px solid #f5f5f5" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#333", fontWeight:600, alignItems:"center", gap:7 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  {item.svgType ? <BurgerSVG type={item.svgType} size={26}/> : <span style={{ fontSize:16 }}>{item.emoji}</span>}
+                  <span>{item.name} × {item.qty}</span>
+                </div>
+                <span>{((item.basePrice+(item.toppingExtra||0))*item.qty).toLocaleString()}원</span>
+              </div>
+              {item.toppingSummary && <div style={{ fontSize:10, color:"#aaa", marginTop:2 }}>{item.toppingSummary}</div>}
+            </div>
+          ))}
+          <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, color:t.primary, paddingTop:5, fontSize:14 }}>
+            <span>합계</span><span>{totalPrice.toLocaleString()}원</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding:11, background:"#fff" }}>
+        <button onClick={()=>{ setStep(0); setCart([]); setPayMethod(null); }} style={{ width:"100%", padding:14, background:t.primary, color:"#fff", border:"none", borderRadius:9, fontWeight:700, cursor:"pointer", fontSize:14 }}>처음으로</button>
+      </div>
+    </div>
+  );
+};
+
+// ─── 은행 키오스크 (신한은행 ATM 실제 플로우) ─────────────────
+// 0홈 → 1매체선택 → 3카드삽입 → 4불법카드복제안내
+// → 5보이스피싱확인1 → 5.5보이스피싱확인2 → 6비밀번호
+// → 7금액선택(출금) / 6.5계좌입력(이체) → 8수수료안내 → 9금액확인 → 10완료
+const BankKiosk = ({ onBack, theme }) => {
+  const [step, setStep] = useState(0);
+  const [service, setService] = useState(null);
+  const [accountNum, setAccountNum] = useState("");
+  const [amount, setAmount] = useState("");
+  const [pin, setPin] = useState("");
+  const t = theme;
+
+  const services = [
+    { id:"withdraw", label:"예금 출금",      desc:"만권·오만권만 출금가능" },
+    { id:"transfer", label:"계좌 이체",      desc:"타행·자행 이체"         },
+    { id:"balance",  label:"예금 조회",      desc:"잔액 및 거래내역"        },
+    { id:"deposit",  label:"입금/무통장송금", desc:"현금 입금"              },
+    { id:"card",     label:"신용카드업무",    desc:"카드대출·간편신청"       },
+    { id:"tmoney",   label:"Tmoney/hi-pass", desc:"교통카드 충전"          },
+    { id:"tax",      label:"국세/지방세",     desc:"공과금·등록금 납부"     },
+    { id:"other",    label:"다른 업무",       desc:"Foreign Languages"      },
+  ];
+
+  // 숫자 패드 (ATM 스타일 — 어두운 배경)
+  const NumPad = ({ value, onChange, maxLen=4, secret=false }) => (
+    <div>
+      <div style={{ background:"#1a3a6b", borderRadius:8, padding:"9px 13px", textAlign:"center", marginBottom:13, minHeight:42, display:"flex", alignItems:"center", justifyContent:"center", gap:9 }}>
+        <span style={{ color:"#aac4ff", fontSize:12, fontWeight:600 }}>비밀번호 :</span>
+        <span style={{ color:"#fff", fontSize:20, letterSpacing:10, fontWeight:700 }}>
+          {secret ? "●".repeat(value.length) : value}
+        </span>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:5 }}>
+        {["1","2","3","4","5","6","7","8","9","","0","←"].map((n,i)=>(
+          <button key={i} onClick={()=>{
+            if(n==="←") onChange(value.slice(0,-1));
+            else if(n!==""&&value.length<maxLen) onChange(value+n);
+          }} style={{ padding:"13px 0", fontSize:17, fontWeight:700, background:n==="←"?"#7a1010":n===""?"transparent":"#1e4a8a", border:n===""?"none":"1px solid #2a5aaa", borderRadius:5, cursor:n===""?"default":"pointer", color:n==="←"?"#ffa0a0":"#fff" }}>{n}</button>
+        ))}
+        <button onClick={()=>onChange("")} style={{ padding:"13px 0", fontSize:12, fontWeight:700, background:"#2a5a30", border:"1px solid #3a7a40", borderRadius:5, cursor:"pointer", color:"#a0ffa8" }}>재배열</button>
+      </div>
+    </div>
+  );
+
+  // 공통 헤더: 취소(빨강) | 타이틀 | 확인(초록)
+  const ATMHeader = ({ title, onCancel, onConfirm, confirmLabel="확 인", cancelLabel="취 소" }) => (
+    <div style={{ display:"flex", alignItems:"stretch", background:"#1a1a1a", minHeight:46 }}>
+      {onCancel!==false && (
+        <button onClick={onCancel||(() => setStep(0))} style={{ flex:1, background:"#8B1A1A", color:"#fff", border:"none", fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:2 }}>{cancelLabel}</button>
+      )}
+      <div style={{ flex:3, background:"#2a2a3a", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <span style={{ color:"#c8d8ff", fontWeight:700, fontSize:14, letterSpacing:2 }}>{title}</span>
+      </div>
+      {onConfirm && (
+        <button onClick={onConfirm} style={{ flex:1, background:"#1a6b1a", color:"#fff", border:"none", fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:2 }}>{confirmLabel}</button>
+      )}
+    </div>
+  );
+
+  // ── 0단계: 홈 (신한은행 ATM 레이아웃)
+  if (step === 0) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#0a1628" }}>
+      <div style={{ background:"#0d1f42", padding:"11px 15px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:"2px solid #1a3060" }}>
+        <div>
+          <div style={{ color:"#6ab0ff", fontSize:19, fontWeight:900, letterSpacing:1 }}>신한은행</div>
+          <div style={{ color:"#4a7aaa", fontSize:9, marginTop:1 }}>www.shinhan.com</div>
+        </div>
+        <div style={{ color:"#aac4e0", fontSize:10 }}>점번호 : 1900 기번 5</div>
+      </div>
+      <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:0, padding:8, background:"#0e1e38", alignContent:"center" }}>
+        {/* 왼쪽 */}
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {services.slice(0,4).map(s=>(
+            <button key={s.id} onClick={()=>{ setService(s); setStep(s.id==="balance"?3:1); }}
+              style={{ padding:"10px 9px", background:"linear-gradient(135deg,#1e3a6a,#243f7a)", border:"1px solid #3a5a9a", borderRadius:7, color:"#d0e4ff", fontWeight:700, fontSize:12, cursor:"pointer", textAlign:"center", boxShadow:"0 2px 6px rgba(0,0,0,0.4)", lineHeight:1.3 }}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+        {/* 중앙 */}
+        <div style={{ width:126, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"0 5px", gap:5 }}>
+          <div style={{ background:"#1a2e50", border:"1px solid #2a4070", borderRadius:7, padding:"7px 8px", textAlign:"center", width:"100%" }}>
+            <div style={{ color:"#f5c842", fontSize:10, fontWeight:700, marginBottom:2 }}>만권·오만권만 출금가능</div>
+            <div style={{ color:"#cc4444", fontSize:9, fontWeight:700 }}>[수표 출금 불가]</div>
+          </div>
+          <div style={{ background:"#f5c842", borderRadius:9, padding:"7px 6px", textAlign:"center", width:"100%", cursor:"pointer" }}>
+            <div style={{ color:"#1a1a00", fontWeight:900, fontSize:11, letterSpacing:1 }}>화 면 확 대</div>
+            <div style={{ color:"#3a3a00", fontSize:9 }}>(눈이편한ATM)</div>
+          </div>
+          <div style={{ background:"#1a6b1a", borderRadius:7, padding:"6px 5px", textAlign:"center", width:"100%", cursor:"pointer" }} onClick={onBack}>
+            <div style={{ color:"#a0ffa8", fontWeight:700, fontSize:10, lineHeight:1.4 }}>🌐 다른업무 /<br/>Foreign Languages</div>
+          </div>
+        </div>
+        {/* 오른쪽 */}
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {services.slice(4).map(s=>(
+            <button key={s.id} onClick={()=>{ setService(s); setStep(1); }}
+              style={{ padding:"10px 9px", background:"linear-gradient(135deg,#1e3a6a,#243f7a)", border:"1px solid #3a5a9a", borderRadius:7, color:"#d0e4ff", fontWeight:700, fontSize:11, cursor:"pointer", textAlign:"center", boxShadow:"0 2px 6px rgba(0,0,0,0.4)", lineHeight:1.3 }}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ background:"#0d1f42", padding:"6px 12px", borderTop:"1px solid #1a3060", display:"flex", justifyContent:"center" }}>
+        <button onClick={onBack} style={{ background:"none", border:"1px solid #2a5a9a", color:"#6ab0ff", padding:"4px 14px", borderRadius:16, cursor:"pointer", fontSize:11 }}>← 키오스크 선택으로</button>
+      </div>
+    </div>
+  );
+
+  // ── 1단계: 매체 선택
+  if (step === 1) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#1a2a4a" }}>
+      <ATMHeader title="매 체 선 택" onCancel={()=>setStep(0)}/>
+      <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:0, padding:9, alignContent:"center" }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+          {[{label:"바이오인증\n(손바닥정맥)",gold:true},{label:"간편 앱 출금"},{label:"superSOL\n신한포인트 출금"},{label:"창구 연계 출금"},{label:"SAMSUNG Wallet\nN Pay"}].map((b,i)=>(
+            <button key={i} onClick={()=>setStep(3)}
+              style={{ padding:"8px 9px", background:b.gold?"linear-gradient(135deg,#8B7A0A,#C8B020)":"linear-gradient(135deg,#1e3a6a,#243f7a)", border:`1px solid ${b.gold?"#d4aa00":"#3a5a9a"}`, borderRadius:7, color:b.gold?"#fff8d0":"#d0e4ff", fontWeight:700, fontSize:10, cursor:"pointer", textAlign:"center", whiteSpace:"pre-line", lineHeight:1.4 }}>
+              {b.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ width:138, padding:"0 5px" }}>
+          <div style={{ background:"#e8f0ff", borderRadius:9, padding:11 }}>
+            <p style={{ margin:"0 0 6px", fontWeight:800, fontSize:12, color:"#222", textAlign:"center" }}>원하시는 거래를<br/>선택하여 주십시오</p>
+            <p style={{ margin:"0 0 5px", fontSize:10, color:"#333", lineHeight:1.5 }}>※ <span style={{ color:"#0033cc", fontWeight:700 }}>통장 및 무매체</span> 거래는 창구에서 거래신청하신 계좌만 가능합니다</p>
+            <p style={{ margin:0, fontSize:9, color:"#666", lineHeight:1.5 }}>※ 바이오 등록은 스마트 라운지 설치점에서 가능합니다</p>
+          </div>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+          {["카 드","통 장","무 매 체","모바일현금카드\n(RF)","전 자 통 장"].map((label,i)=>(
+            <button key={i} onClick={()=>setStep(3)}
+              style={{ padding:"8px 9px", background:"linear-gradient(135deg,#1e3a6a,#243f7a)", border:"1px solid #3a5a9a", borderRadius:7, color:"#d0e4ff", fontWeight:700, fontSize:10, cursor:"pointer", textAlign:"center", whiteSpace:"pre-line", lineHeight:1.4 }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── 3단계: 카드 삽입
+  if (step === 3) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#1a2a4a" }}>
+      <ATMHeader title="카 드" onCancel={()=>setStep(1)} onConfirm={null}/>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:18, padding:20 }}>
+        <p style={{ color:"#c8d8ff", fontSize:18, fontWeight:700, textAlign:"center", margin:0, lineHeight:1.7 }}>카드를 화살표 방향으로<br/>넣어 주십시오</p>
+        <div style={{ background:"#0d1f42", border:"2px solid #2a5a9a", borderRadius:12, padding:20, textAlign:"center", width:155 }}>
+          <div style={{ fontSize:12, color:"#aac4e0", marginBottom:9, fontWeight:600 }}>카드 | 명세표</div>
+          <div style={{ position:"relative", width:108, height:66, margin:"0 auto 6px", background:"linear-gradient(135deg,#1a5aaa,#2a6acc)", borderRadius:7, border:"1px solid #4a8add" }}>
+            <div style={{ position:"absolute", top:9, left:9, width:22, height:17, background:"#f5c842", borderRadius:3, opacity:0.85 }}/>
+            <div style={{ position:"absolute", bottom:10, right:9, color:"rgba(255,255,255,0.5)", fontSize:8, fontWeight:700 }}>신한은행</div>
+          </div>
+          <div style={{ color:"#6ab0ff", fontSize:20, marginBottom:3 }}>↓</div>
+          <div style={{ height:7, background:"#0a1628", width:"80%", margin:"0 auto", border:"1px solid #2a4a7a" }}/>
+        </div>
+        <button onClick={()=>setStep(4)} style={{ background:"#1a6b1a", color:"#a0ffa8", border:"none", borderRadius:9, padding:"12px 22px", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+          카드 삽입 완료 (시뮬레이션)
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── 4단계: 불법 카드복제 유의사항
+  if (step === 4) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#c8d8f0" }}>
+      <ATMHeader title="거 래 취 소" onCancel={()=>setStep(0)} onConfirm={()=>setStep(5)} confirmLabel="거래계속"/>
+      <div style={{ flex:1, padding:13, overflow:"auto" }}>
+        <h3 style={{ color:"#0033cc", fontSize:14, fontWeight:900, textAlign:"center", margin:"0 0 9px", letterSpacing:1 }}>불법 카드복제 관련 유의 사항</h3>
+        <p style={{ fontSize:12, color:"#222", lineHeight:1.8, margin:"0 0 11px" }}>최근 자동화기기에 카드 복제기를 부착하여 고객 정보 탈취를 시도한 사례가 있사오니, 카드투입부가 아래 화면과 다른 경우에는 사용을 중단하시고 영업점이나 인터폰으로 신고하여 주시기 바랍니다</p>
+        <div style={{ display:"flex", gap:8, marginBottom:11 }}>
+          <div style={{ flex:1, background:"#1a2a4a", borderRadius:8, padding:10, textAlign:"center", border:"2px solid #3a5a9a" }}>
+            <div style={{ fontSize:9, color:"#aac4e0", marginBottom:4 }}>카드 | 명세표</div>
+            <div style={{ width:42, height:27, background:"linear-gradient(135deg,#1a5aaa,#2a6acc)", borderRadius:4, margin:"0 auto 4px" }}/>
+            <div style={{ width:"80%", height:3, background:"#0a1628", margin:"0 auto", borderRadius:2 }}/>
+          </div>
+          <div style={{ flex:1, background:"#333", borderRadius:8, padding:10, textAlign:"center", border:"2px solid #555" }}>
+            <div style={{ fontSize:9, color:"#ccc", marginBottom:3 }}>🤚 비밀번호 가리기</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:2 }}>
+              {["","","1","2","3","4"].map((n,i)=>(
+                <div key={i} style={{ background:n?"#4a6a9a":"transparent", borderRadius:2, height:15, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:9, fontWeight:700 }}>{n}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ background:"#fff8e0", border:"1px solid #d4aa00", borderRadius:8, padding:"8px 10px", marginBottom:7 }}>
+          <p style={{ margin:0, fontSize:11, color:"#444", lineHeight:1.7 }}><span style={{ color:"#cc0000", fontWeight:800 }}>* 주 의 *</span>{"  "}반드시 비밀번호는 타인이나 카메라 등에 노출되지 않도록 손이나 책 등으로 가린 후 입력하십시오</p>
+        </div>
+        <p style={{ fontSize:10, color:"#0033cc", textAlign:"center", margin:0, fontWeight:600 }}>거래를 계속하기 원하시면 우측상단의 [거래계속]버튼을 눌러주십시오</p>
+      </div>
+    </div>
+  );
+
+  // ── 5단계: 보이스피싱 주의 (1/2)
+  if (step === 5) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#c8d8f0" }}>
+      <ATMHeader title="보이스피싱 주의" onCancel={()=>setStep(0)} onConfirm={()=>setStep(5.5)} cancelLabel="예" confirmLabel="아 니 오"/>
+      <div style={{ flex:1, padding:15, display:"flex", flexDirection:"column", justifyContent:"center", gap:12 }}>
+        <div style={{ background:"#fff", borderRadius:10, padding:16, boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
+          <p style={{ fontSize:14, color:"#222", lineHeight:2, margin:0 }}>
+            금융회사 직원에게<br/><span style={{ color:"#cc0000", fontWeight:700 }}>저금리 대환대출, 현금 대출상환</span> 등을<br/>요구 받아 거래하고 계신가요?
+          </p>
+        </div>
+        <div style={{ background:"#fff", borderRadius:10, padding:16, boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
+          <p style={{ fontSize:13, color:"#222", lineHeight:2, margin:0 }}>
+            또는 <span style={{ color:"#cc0000", fontWeight:700 }}>검찰, 금융감독원</span>으로부터<br/>현금 출금 및 이체를 요구 받으셨나요?
+          </p>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:12, marginTop:4 }}>
+          {[{label:"시작",active:false},{label:"진행",active:true},{label:"종료",active:false}].map((b,i,arr)=>(
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:44, height:44, borderRadius:"50%", background:b.active?"#cc2200":"#ddd", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:b.active?"#fff":"#555" }}>{b.label}</div>
+              {i<arr.length-1 && <span style={{ color:i===1?"#f5c842":"#aaa", fontSize:15 }}>›</span>}
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize:10, color:"#888", textAlign:"center", margin:0 }}>해당 사항이 없으시면 우측 상단 [아니오] 버튼을 눌러주세요</p>
+      </div>
+    </div>
+  );
+
+  // ── 5.5단계: 보이스피싱 최신 피해 사례
+  if (step === 5.5) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#c8d8f0" }}>
+      <ATMHeader title="보이스피싱 주의" onCancel={()=>setStep(5)} onConfirm={()=>setStep(6)} cancelLabel="예" confirmLabel="아 니 오"/>
+      <div style={{ flex:1, padding:15, display:"flex", flexDirection:"column", justifyContent:"center", gap:13 }}>
+        <div style={{ background:"#fff", borderRadius:10, padding:18, boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
+          <p style={{ fontSize:13, fontWeight:700, color:"#cc0000", margin:"0 0 7px", textAlign:"center" }}>- 보이스피싱 주의하세요 -</p>
+          <p style={{ fontSize:12, fontWeight:700, color:"#333", margin:"0 0 9px", textAlign:"center" }}>〈 최신 발생 피해 사례 〉</p>
+          <div style={{ background:"#fff8e0", borderRadius:8, padding:"9px 13px", border:"1px solid #f5c842" }}>
+            <p style={{ margin:0, fontSize:13, color:"#444", lineHeight:1.9 }}>OO 카드가 배송 되었습니다<br/>본인신청 아닐 경우 신고하세요</p>
+          </div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
+          {[{label:"시작",active:false},{label:"진행",active:true},{label:"종료",active:false}].map((b,i,arr)=>(
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:44, height:44, borderRadius:"50%", background:b.active?"#cc2200":"#ddd", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:b.active?"#fff":"#555" }}>{b.label}</div>
+              {i<arr.length-1 && <span style={{ color:i===1?"#f5c842":"#aaa", fontSize:15 }}>›</span>}
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize:10, color:"#888", textAlign:"center", margin:0 }}>해당 사항이 없으시면 [아니오]를 눌러주세요</p>
+      </div>
+    </div>
+  );
+
+  // ── 6단계: 비밀번호 입력
+  if (step === 6) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#1a2a4a" }}>
+      <ATMHeader title="비 밀 번 호" onCancel={()=>setStep(0)}
+        onConfirm={pin.length===4?()=>{ setPin(""); setStep(service?.id==="transfer"?6.5:service?.id==="balance"?9:7); }:null}/>
+      <div style={{ flex:1, padding:13, display:"flex", flexDirection:"column", gap:9 }}>
+        <div style={{ background:"#e8f0ff", borderRadius:9, padding:"10px 12px", border:"1px solid #5a8acc" }}>
+          <p style={{ margin:0, fontSize:11, color:"#cc2200", fontWeight:700, lineHeight:1.8 }}>[주의] 반드시 비밀번호는 타인이나 카메라 등에 노출되지 않도록 손이나 책 등으로 가린 후 입력하십시오</p>
+          <p style={{ margin:"6px 0 0", fontSize:12, color:"#0033cc", fontWeight:600 }}>4자리 비밀번호를 눌러 주십시오</p>
+        </div>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center" }}>
+          <NumPad value={pin} onChange={setPin} maxLen={4} secret={true}/>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── 6.5단계: 이체 계좌번호
+  if (step === 6.5) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#1a2a4a" }}>
+      <ATMHeader title="계 좌 번 호 입 력" onCancel={()=>setStep(6)}
+        onConfirm={accountNum.length>=10?()=>setStep(7):null}/>
+      <div style={{ flex:1, padding:13, display:"flex", flexDirection:"column", gap:9 }}>
+        <div style={{ background:"#e8f0ff", borderRadius:9, padding:11 }}>
+          <p style={{ margin:"0 0 6px", fontSize:12, fontWeight:700, color:"#0033cc" }}>받으실 분의 계좌번호를 입력하세요</p>
+          <div style={{ background:"#fff", border:"2px solid #2a5aaa", borderRadius:6, padding:"8px 11px", fontSize:15, fontWeight:700, color:"#222", minHeight:38, letterSpacing:2 }}>
+            {accountNum||<span style={{ color:"#ccc", fontSize:12 }}>계좌번호를 입력하세요</span>}
+          </div>
+        </div>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:5 }}>
+            {["1","2","3","4","5","6","7","8","9","","0","←"].map((n,i)=>(
+              <button key={i} onClick={()=>{ if(n==="←")setAccountNum(v=>v.slice(0,-1)); else if(n!==""&&accountNum.length<14)setAccountNum(v=>v+n); }}
+                style={{ padding:"12px 0", fontSize:16, fontWeight:700, background:n==="←"?"#7a1010":n===""?"transparent":"#1e4a8a", border:n===""?"none":"1px solid #2a5aaa", borderRadius:5, cursor:n===""?"default":"pointer", color:n==="←"?"#ffa0a0":"#fff" }}>{n}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── 7단계: 금액 선택
+  if (step === 7) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#c8d8f0" }}>
+      <ATMHeader title="금 액 선 택" onCancel={()=>setStep(0)}/>
+      <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:0, padding:8, alignContent:"center" }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {[30000,50000,100000,200000,300000].map(a=>(
+            <button key={a} onClick={()=>{ setAmount(String(a)); setStep(8); }}
+              style={{ padding:"9px 8px", background:"linear-gradient(135deg,#d0d8f0,#b8c8e8)", border:"1px solid #8a9acc", borderRadius:6, color:"#222", fontWeight:700, fontSize:12, cursor:"pointer", textAlign:"center", letterSpacing:1 }}>
+              {a/10000} 만 원
+            </button>
+          ))}
+        </div>
+        <div style={{ width:132, padding:"0 5px" }}>
+          <div style={{ background:"#fff", borderRadius:8, padding:9, border:"1px solid #8a9acc", marginBottom:6 }}>
+            <p style={{ margin:"0 0 5px", fontSize:10, color:"#222", fontWeight:700, lineHeight:1.6 }}>찾으실 금액의 <span style={{ background:"#f5c842", padding:"1px 3px", borderRadius:3, fontSize:9 }}>버 튼</span>을 하나만 눌러주십시오</p>
+            <p style={{ margin:"0 0 5px", fontSize:10, color:"#222", lineHeight:1.6 }}>해당 금액이 없으면 <span style={{ background:"#f5c842", padding:"1px 3px", borderRadius:3, fontSize:9 }}>기 타</span>버튼을 눌러 주십시오</p>
+            <p style={{ margin:0, fontSize:9, color:"#0033cc" }}>현금은 100만원까지 지급 가능합니다</p>
+          </div>
+          <div style={{ background:"#f5c842", borderRadius:6, padding:"6px 7px", textAlign:"center", cursor:"pointer", border:"1px solid #d4aa00" }}>
+            <div style={{ color:"#1a1a00", fontWeight:800, fontSize:11, letterSpacing:1 }}>기 타</div>
+          </div>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {[400000,500000,700000,1000000].map(a=>(
+            <button key={a} onClick={()=>{ setAmount(String(a)); setStep(8); }}
+              style={{ padding:"9px 8px", background:"linear-gradient(135deg,#d0d8f0,#b8c8e8)", border:"1px solid #8a9acc", borderRadius:6, color:"#222", fontWeight:700, fontSize:12, cursor:"pointer", textAlign:"center", letterSpacing:1 }}>
+              {a/10000} 만 원
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── 8단계: 수수료 안내
+  if (step === 8) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#c8d8f0" }}>
+      <ATMHeader title="예금인출 수수료 발생" onCancel={()=>setStep(7)} onConfirm={()=>setStep(9)}/>
+      <div style={{ flex:1, padding:16, display:"flex", flexDirection:"column", justifyContent:"center", gap:13 }}>
+        <div style={{ background:"#fff", borderRadius:10, padding:17, boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
+          <p style={{ margin:"0 0 13px", fontSize:12, color:"#222", lineHeight:1.9 }}>
+            고객님의 예금인출 거래시 아래와 같이 수수료가 발생합니다.
+            인출을 원하시면 <span style={{ background:"#1a6b1a", color:"#fff", padding:"1px 5px", borderRadius:3, fontWeight:700, fontSize:11 }}>확 인</span> 버튼을,
+            취소를 원하시면 <span style={{ background:"#8B1A1A", color:"#fff", padding:"1px 5px", borderRadius:3, fontWeight:700, fontSize:11 }}>취 소</span> 버튼을 눌러 주십시오.
+          </p>
+          <div style={{ background:"#f5f8ff", borderRadius:8, padding:"11px 13px", border:"1px solid #c0d0f0" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, fontSize:12, color:"#333" }}><span>인출계좌번호 :</span><span style={{ fontWeight:700 }}>27085847039</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, fontSize:12, color:"#333" }}><span>요 청 금 액 :</span><span style={{ fontWeight:700 }}>{parseInt(amount).toLocaleString()}원</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between", paddingTop:7, borderTop:"1px solid #c0d0f0", fontSize:12, color:"#333" }}><span>발생할수수료 :</span><span style={{ fontWeight:700, color:"#0033cc" }}>0원</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── 9단계: 금액 확인
+  if (step === 9) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#c8d8f0" }}>
+      <ATMHeader title="금 액 확 인" onCancel={()=>setStep(8)} onConfirm={()=>setStep(10)}/>
+      <div style={{ flex:1, padding:16, display:"flex", flexDirection:"column", justifyContent:"center", gap:13 }}>
+        <div style={{ background:"#fff", borderRadius:10, padding:20, boxShadow:"0 2px 8px rgba(0,0,0,0.1)" }}>
+          <p style={{ margin:"0 0 13px", fontSize:14, color:"#0033cc", fontWeight:700, textAlign:"center" }}>찾으시는 금액의 내용입니다</p>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, fontSize:14, color:"#333", padding:"7px 0", borderBottom:"1px solid #eee" }}><span style={{ letterSpacing:3 }}>현 금 :</span><span style={{ fontWeight:700 }}>{parseInt(amount)/10000}만원</span></div>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, fontSize:14, color:"#333", padding:"7px 0", borderBottom:"1px solid #eee" }}><span style={{ letterSpacing:3 }}>수 표 :</span><span style={{ fontWeight:700 }}>0만원</span></div>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:14, color:"#333", padding:"7px 0" }}><span>합계금액 :</span><span style={{ fontWeight:800, color:"#0033cc" }}>{parseInt(amount)/10000}만원</span></div>
+        </div>
+        <p style={{ fontSize:11, color:"#555", margin:0, lineHeight:1.9, textAlign:"center" }}>
+          주 *) 타행 고객님은 수표 출금이 되지 않습니다.<br/>
+          맞으면 <span style={{ color:"#1a6b1a", fontWeight:700 }}>[확 인]</span>, 틀리면 <span style={{ color:"#8B1A1A", fontWeight:700 }}>[취 소]</span>버튼을 눌러 주십시오
+        </p>
+      </div>
+    </div>
+  );
+
+  // ── 10단계: 완료
+  return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:"#1a2a4a" }}>
+      <div style={{ background:"#0d1f42", padding:"10px 14px", borderBottom:"2px solid #1a3060" }}>
+        <span style={{ color:"#6ab0ff", fontWeight:700, fontSize:14, letterSpacing:1 }}>거 래 완 료</span>
+      </div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:16, gap:13 }}>
+        <div style={{ fontSize:50 }}>✅</div>
+        <h2 style={{ margin:0, fontSize:20, fontWeight:900, color:"#c8d8ff", textAlign:"center" }}>
+          {service?.id==="balance"?"잔액 조회":service?.id==="transfer"?"이체":"출금"} 완료
+        </h2>
+        <div style={{ background:"#0d1f42", borderRadius:11, padding:16, width:"100%", border:"1px solid #2a4070" }}>
+          {service?.id==="balance"?(
+            <><div style={{ textAlign:"center", color:"#aac4e0", fontSize:12, marginBottom:5 }}>현재 잔액</div><div style={{ textAlign:"center", fontSize:28, fontWeight:900, color:"#6ab0ff" }}>1,234,500원</div></>
+          ):(
+            <>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, color:"#aac4e0", fontSize:12 }}><span>거래 종류</span><span style={{ color:"#fff", fontWeight:700 }}>{service?.label}</span></div>
+              {amount && <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, color:"#aac4e0", fontSize:12 }}><span>금액</span><span style={{ color:"#6ab0ff", fontWeight:700 }}>{parseInt(amount).toLocaleString()}원</span></div>}
+              {accountNum && <div style={{ display:"flex", justifyContent:"space-between", color:"#aac4e0", fontSize:12 }}><span>계좌번호</span><span style={{ color:"#fff", fontWeight:700 }}>{accountNum}</span></div>}
+            </>
+          )}
+          <div style={{ marginTop:11, padding:"9px 0 0", borderTop:"1px solid #2a4070", color:"#6ab0ff", fontSize:10, textAlign:"center" }}>카드를 가져가세요 · 영수증을 선택해주세요</div>
+        </div>
+        <div style={{ background:"#e8f0ff", borderRadius:9, padding:13, width:"100%", border:"1px solid #8a9acc", textAlign:"center" }}>
+          <p style={{ margin:"0 0 7px", fontSize:12, fontWeight:700, color:"#333" }}>필요한 출력물을 선택하세요.</p>
+          <div style={{ display:"flex", gap:7 }}>
+            <button style={{ flex:1, padding:"8px 0", background:"#555", color:"#fff", border:"none", borderRadius:7, fontWeight:700, cursor:"pointer", fontSize:12 }}>영수증</button>
+            <button style={{ flex:1, padding:"8px 0", background:"#cc2200", color:"#fff", border:"none", borderRadius:7, fontWeight:700, cursor:"pointer", fontSize:12 }}>주문번호표</button>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding:11, background:"#0d1f42" }}>
+        <button onClick={()=>{ setStep(0); setPin(""); setAmount(""); setAccountNum(""); }}
+          style={{ width:"100%", padding:12, background:"#1a6b1a", color:"#a0ffa8", border:"none", borderRadius:9, fontWeight:800, cursor:"pointer", fontSize:13, letterSpacing:1 }}>
+          처음으로
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── 약국 키오스크 ────────────────────────────────────────────
+const PharmacyKiosk = ({ onBack, theme }) => {
+  const [step, setStep] = useState(0);
+  const [service, setService] = useState(null);
+  const [selectedMeds, setSelectedMeds] = useState([]);
+  const [nameInput, setNameInput] = useState("");
+  const [birthInput, setBirthInput] = useState("");
+  const t = theme;
+  const services = [
+    { id:"prescription", label:"처방전 접수",    emoji:"📋", desc:"병원 처방전으로 약 수령" },
+    { id:"otc",          label:"일반의약품 구매", emoji:"💊", desc:"처방전 없이 구매 가능"   },
+    { id:"pickup",       label:"조제약 수령",     emoji:"🧴", desc:"미리 접수한 약 수령"     },
+    { id:"consult",      label:"복약 상담 대기",  emoji:"👩‍⚕️", desc:"약사 상담 대기번호 발급" },
+  ];
+  const otcMeds = [
+    { id:1, name:"타이레놀 500mg", price:3800,  emoji:"💊", desc:"해열진통제" },
+    { id:2, name:"판콜에이",       price:4200,  emoji:"🤧", desc:"감기약"     },
+    { id:3, name:"겔포스",         price:5600,  emoji:"🫙", desc:"소화제"     },
+    { id:4, name:"아로나민골드",   price:12000, emoji:"⭐", desc:"비타민B"    },
+    { id:5, name:"베아제",         price:6800,  emoji:"🌿", desc:"소화효소제" },
+    { id:6, name:"마데카솔",       price:4500,  emoji:"🩹", desc:"상처치료제" },
+  ];
+  const toggleMed = (med) => setSelectedMeds(prev => prev.find(m=>m.id===med.id) ? prev.filter(m=>m.id!==med.id) : [...prev, med]);
+  const total = selectedMeds.reduce((s,m)=>s+m.price,0);
+
+  if (step===0) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"26px 18px", textAlign:"center" }}>
+        <div style={{ fontSize:42, marginBottom:5 }}>💊</div>
+        <h1 style={{ color:"#fff", fontSize:21, fontWeight:900, margin:0 }}>약국 키오스크</h1>
+        <p style={{ color:"rgba(255,255,255,0.75)", fontSize:12, margin:"5px 0 0" }}>원하시는 서비스를 선택해주세요</p>
+      </div>
+      <div style={{ flex:1, padding:14, background:t.bg, display:"flex", flexDirection:"column", gap:9, overflowY:"auto" }}>
+        {services.map(s=>(
+          <button key={s.id} onClick={()=>{ setService(s); setStep(1); }}
+            style={{ background:"#fff", border:"2px solid transparent", borderRadius:13, padding:"16px 18px", cursor:"pointer", display:"flex", alignItems:"center", gap:14, boxShadow:"0 2px 8px rgba(0,0,0,0.07)", transition:"all 0.15s" }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=t.primary} onMouseLeave={e=>e.currentTarget.style.borderColor="transparent"}>
+            <span style={{ fontSize:34 }}>{s.emoji}</span>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ fontWeight:700, fontSize:15, color:"#222" }}>{s.label}</div>
+              <div style={{ fontSize:11, color:"#888", marginTop:2 }}>{s.desc}</div>
+            </div>
+            <span style={{ marginLeft:"auto", color:t.primary, fontSize:18 }}>›</span>
+          </button>
+        ))}
+      </div>
+      <div style={{ padding:11, background:"#fff", textAlign:"center" }}>
+        <button onClick={onBack} style={{ background:"none", border:`2px solid ${t.primary}`, color:t.primary, padding:"9px 28px", borderRadius:30, cursor:"pointer", fontWeight:700, fontSize:13 }}>← 키오스크 선택으로</button>
+      </div>
+    </div>
+  );
+  if (step===1 && service?.id==="prescription") return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"13px 18px", display:"flex", alignItems:"center", gap:11 }}>
+        <button onClick={()=>setStep(0)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 11px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>처방전 접수</span>
+      </div>
+      <div style={{ flex:1, padding:14, background:t.bg, display:"flex", flexDirection:"column", gap:11 }}>
+        <div style={{ background:"#fff", borderRadius:15, padding:18, boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
+          <p style={{ fontWeight:700, fontSize:15, margin:"0 0 14px", color:"#444" }}>환자 정보를 입력해주세요</p>
+          <div style={{ marginBottom:13 }}>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:5 }}>성명</label>
+            <input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="홍길동"
+              style={{ width:"100%", padding:"11px 13px", border:`2px solid ${nameInput?t.primary:"#ddd"}`, borderRadius:9, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily:"inherit" }}/>
+          </div>
+          <div>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:5 }}>생년월일 (6자리)</label>
+            <input value={birthInput} onChange={e=>setBirthInput(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="예) 850312"
+              style={{ width:"100%", padding:"11px 13px", border:`2px solid ${birthInput.length===6?t.primary:"#ddd"}`, borderRadius:9, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily:"inherit" }}/>
+          </div>
+        </div>
+        <div style={{ background:"#e8f7f0", borderRadius:13, padding:14, border:`1px solid ${t.primary}30` }}>
+          <div style={{ fontWeight:700, color:t.primary, marginBottom:5 }}>📋 처방전 접수 안내</div>
+          <ul style={{ margin:0, paddingLeft:16, color:"#555", fontSize:12, lineHeight:1.8 }}>
+            <li>처방전을 접수창구에 제출해 주세요</li>
+            <li>조제 완료 후 대기번호로 호출됩니다</li>
+            <li>신분증 지참을 권장합니다</li>
+          </ul>
+        </div>
+      </div>
+      <div style={{ padding:14, background:"#fff" }}>
+        <button onClick={()=>nameInput&&birthInput.length===6&&setStep(3)}
+          style={{ width:"100%", padding:14, background:nameInput&&birthInput.length===6?t.primary:"#ccc", color:"#fff", border:"none", borderRadius:11, fontWeight:700, cursor:nameInput&&birthInput.length===6?"pointer":"not-allowed", fontSize:15 }}>접수하기 →</button>
+      </div>
+    </div>
+  );
+  if (step===1 && service?.id==="otc") return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"11px 16px", display:"flex", alignItems:"center", gap:11 }}>
+        <button onClick={()=>setStep(0)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 11px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>일반의약품 선택</span>
+        {selectedMeds.length>0 && <span style={{ marginLeft:"auto", background:"#fff", color:t.primary, borderRadius:11, padding:"2px 9px", fontSize:12, fontWeight:700 }}>{selectedMeds.length}개</span>}
+      </div>
+      <div style={{ flex:1, overflow:"auto", padding:11, background:t.bg, display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
+        {otcMeds.map(med=>{
+          const sel = selectedMeds.find(m=>m.id===med.id);
+          return (
+            <button key={med.id} onClick={()=>toggleMed(med)}
+              style={{ background:"#fff", border:sel?`2px solid ${t.primary}`:"2px solid transparent", borderRadius:13, padding:"13px 9px", cursor:"pointer", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.07)", position:"relative" }}>
+              {sel && <span style={{ position:"absolute", top:7, right:7, background:t.primary, color:"#fff", fontSize:11, width:19, height:19, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>✓</span>}
+              <div style={{ fontSize:30, marginBottom:5 }}>{med.emoji}</div>
+              <div style={{ fontWeight:700, fontSize:12, marginBottom:3, color:"#222" }}>{med.name}</div>
+              <div style={{ fontSize:10, color:"#999", marginBottom:3 }}>{med.desc}</div>
+              <div style={{ fontWeight:800, color:t.primary, fontSize:13 }}>{med.price.toLocaleString()}원</div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ padding:14, background:"#fff", borderTop:"1px solid #eee", display:"flex", gap:9 }}>
+        <button onClick={()=>setStep(0)} style={{ flex:1, padding:13, background:"#555", color:"#fff", border:"none", borderRadius:11, fontWeight:700, cursor:"pointer" }}>←</button>
+        {selectedMeds.length>0 && <button onClick={()=>setStep(2)} style={{ flex:2, padding:13, background:t.primary, color:"#fff", border:"none", borderRadius:11, fontWeight:700, cursor:"pointer", fontSize:13 }}>결제 ({total.toLocaleString()}원) →</button>}
+      </div>
+    </div>
+  );
+  if (step===1) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"13px 16px", display:"flex", alignItems:"center", gap:11 }}>
+        <button onClick={()=>setStep(0)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 11px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>{service?.label}</span>
+      </div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:22, gap:18, background:t.bg }}>
+        <div style={{ fontSize:70 }}>{service?.emoji}</div>
+        <h2 style={{ margin:0, fontSize:21, fontWeight:800, color:"#222", textAlign:"center" }}>{service?.desc}</h2>
+        <div style={{ background:"#fff", borderRadius:15, padding:18, width:"100%", boxShadow:"0 4px 16px rgba(0,0,0,0.08)" }}>
+          <p style={{ color:"#555", lineHeight:1.7, margin:0, fontSize:13 }}>대기번호가 발급됩니다.<br/>번호가 호출되면 카운터로 오세요.<br/>현재 대기 인원: <strong style={{ color:t.primary }}>3명</strong></p>
+        </div>
+        <button onClick={()=>setStep(3)} style={{ width:"100%", padding:14, background:t.primary, color:"#fff", border:"none", borderRadius:13, fontWeight:700, cursor:"pointer", fontSize:15 }}>대기번호 받기 →</button>
+      </div>
+    </div>
+  );
+  if (step===2) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"13px 16px", display:"flex", alignItems:"center", gap:11 }}>
+        <button onClick={()=>setStep(1)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 11px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>결제</span>
+      </div>
+      <div style={{ flex:1, padding:14, background:t.bg }}>
+        <div style={{ background:"#fff", borderRadius:15, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.07)", marginBottom:11 }}>
+          {selectedMeds.map(m=>(
+            <div key={m.id} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:"1px solid #f5f5f5", fontSize:13, color:"#444" }}>
+              <span>{m.emoji} {m.name}</span><span style={{ fontWeight:700 }}>{m.price.toLocaleString()}원</span>
+            </div>
+          ))}
+          <div style={{ display:"flex", justifyContent:"space-between", paddingTop:9, fontWeight:800, color:t.primary, fontSize:16 }}><span>합계</span><span>{total.toLocaleString()}원</span></div>
+        </div>
+        <div style={{ background:"#fff", borderRadius:15, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
+          <p style={{ fontWeight:700, color:"#444", margin:"0 0 11px" }}>결제 방법 선택</p>
+          {["💳 신용카드","💛 카카오페이","💵 현금"].map(m=>(
+            <button key={m} onClick={()=>setStep(3)} style={{ display:"block", width:"100%", padding:"13px 14px", marginBottom:7, background:"#f5f7ff", border:"none", borderRadius:9, cursor:"pointer", textAlign:"left", fontWeight:600, fontSize:14, color:"#333" }}>{m}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"13px 16px" }}><span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>접수/처리 완료</span></div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:22, gap:14, background:t.bg }}>
+        <div style={{ fontSize:70 }}>✅</div>
+        <h2 style={{ margin:0, fontSize:22, fontWeight:900, color:"#222", textAlign:"center" }}>{service?.id==="otc"?"결제 완료":"접수 완료"}</h2>
+        <div style={{ background:"#fff", borderRadius:15, padding:22, width:"100%", boxShadow:"0 4px 16px rgba(0,0,0,0.08)", textAlign:"center" }}>
+          <div style={{ fontSize:15, color:"#888", marginBottom:5 }}>대기번호</div>
+          <div style={{ fontSize:62, fontWeight:900, color:t.primary }}>07</div>
+          <p style={{ color:"#666", margin:"11px 0 0", fontSize:13 }}>번호 호출 시 카운터에서 수령해 주세요</p>
+        </div>
+      </div>
+      <div style={{ padding:14, background:"#fff" }}>
+        <button onClick={()=>{ setStep(0); setSelectedMeds([]); setNameInput(""); setBirthInput(""); }}
+          style={{ width:"100%", padding:14, background:t.primary, color:"#fff", border:"none", borderRadius:11, fontWeight:700, cursor:"pointer", fontSize:15 }}>처음으로</button>
+      </div>
+    </div>
+  );
+};
+
+// ─── 병원 키오스크 ────────────────────────────────────────────
+const HospitalKiosk = ({ onBack, theme }) => {
+  const [step, setStep] = useState(0);
+  const [service, setService] = useState(null);
+  const [dept, setDept] = useState(null);
+  const [nameInput, setNameInput] = useState("");
+  const [birthInput, setBirthInput] = useState("");
+  const t = theme;
+  const services = [
+    { id:"checkin",     label:"진료 접수",     emoji:"📝", desc:"오늘 진료 접수하기"   },
+    { id:"payment",     label:"수납/결제",     emoji:"💰", desc:"진료비 수납"          },
+    { id:"certificate", label:"제증명 발급",   emoji:"📄", desc:"진단서, 처방전 등"   },
+    { id:"number",      label:"대기번호 확인", emoji:"🔢", desc:"현재 대기 현황 확인" },
+  ];
+  const depts = [
+    { id:"internal", name:"내과",          emoji:"🫀", wait:3 },
+    { id:"ortho",    name:"정형외과",      emoji:"🦴", wait:7 },
+    { id:"neuro",    name:"신경과",        emoji:"🧠", wait:5 },
+    { id:"derm",     name:"피부과",        emoji:"🧴", wait:2 },
+    { id:"eye",      name:"안과",          emoji:"👁️", wait:4 },
+    { id:"ent",      name:"이비인후과",    emoji:"👂", wait:6 },
+    { id:"rehab",    name:"재활의학과",    emoji:"🏃", wait:8 },
+    { id:"psych",    name:"정신건강의학과",emoji:"🧩", wait:1 },
+  ];
+  if (step===0) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"26px 18px", textAlign:"center" }}>
+        <div style={{ fontSize:42, marginBottom:5 }}>🏥</div>
+        <h1 style={{ color:"#fff", fontSize:21, fontWeight:900, margin:0 }}>병원 무인접수기</h1>
+        <p style={{ color:"rgba(255,255,255,0.75)", fontSize:12, margin:"5px 0 0" }}>원하시는 서비스를 선택해주세요</p>
+      </div>
+      <div style={{ flex:1, padding:14, background:t.bg, display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, overflowY:"auto" }}>
+        {services.map(s=>(
+          <button key={s.id} onClick={()=>{ setService(s); setStep(1); }}
+            style={{ background:"#fff", border:"2px solid transparent", borderRadius:13, padding:"18px 11px", cursor:"pointer", textAlign:"center", boxShadow:"0 2px 10px rgba(0,0,0,0.07)", transition:"all 0.15s" }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=t.primary} onMouseLeave={e=>e.currentTarget.style.borderColor="transparent"}>
+            <div style={{ fontSize:34, marginBottom:7 }}>{s.emoji}</div>
+            <div style={{ fontWeight:700, fontSize:13, color:"#222", marginBottom:3 }}>{s.label}</div>
+            <div style={{ fontSize:10, color:"#999" }}>{s.desc}</div>
+          </button>
+        ))}
+      </div>
+      <div style={{ padding:11, background:"#fff", textAlign:"center" }}>
+        <button onClick={onBack} style={{ background:"none", border:`2px solid ${t.primary}`, color:t.primary, padding:"9px 28px", borderRadius:30, cursor:"pointer", fontWeight:700, fontSize:13 }}>← 키오스크 선택으로</button>
+      </div>
+    </div>
+  );
+  if (step===1) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"13px 18px", display:"flex", alignItems:"center", gap:11 }}>
+        <button onClick={()=>setStep(0)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 11px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>{service?.label}</span>
+      </div>
+      <div style={{ flex:1, padding:14, background:t.bg }}>
+        <div style={{ background:"#fff", borderRadius:15, padding:18, boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
+          <p style={{ fontWeight:700, fontSize:15, margin:"0 0 14px", color:"#444" }}>본인 확인</p>
+          <div style={{ marginBottom:13 }}>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:5 }}>성명</label>
+            <input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="홍길동"
+              style={{ width:"100%", padding:"11px 13px", border:`2px solid ${nameInput?t.primary:"#ddd"}`, borderRadius:9, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily:"inherit" }}/>
+          </div>
+          <div>
+            <label style={{ fontSize:12, color:"#888", display:"block", marginBottom:5 }}>생년월일 (6자리)</label>
+            <input value={birthInput} onChange={e=>setBirthInput(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="예) 850312"
+              style={{ width:"100%", padding:"11px 13px", border:`2px solid ${birthInput.length===6?t.primary:"#ddd"}`, borderRadius:9, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily:"inherit" }}/>
+          </div>
+        </div>
+        {service?.id==="checkin" && (
+          <div style={{ background:"#e8f4ff", borderRadius:13, padding:13, border:`1px solid ${t.primary}30`, marginTop:11 }}>
+            <div style={{ fontWeight:700, color:t.primary, marginBottom:5, fontSize:12 }}>ℹ️ 접수 안내</div>
+            <p style={{ margin:0, color:"#555", fontSize:11, lineHeight:1.6 }}>건강보험증 또는 신분증을 지참해 주세요. 초진 환자는 창구 접수를 이용해 주세요.</p>
+          </div>
+        )}
+      </div>
+      <div style={{ padding:14, background:"#fff" }}>
+        <button onClick={()=>nameInput&&birthInput.length===6&&setStep(service?.id==="checkin"?2:service?.id==="payment"?3:4)}
+          style={{ width:"100%", padding:14, background:nameInput&&birthInput.length===6?t.primary:"#ccc", color:"#fff", border:"none", borderRadius:11, fontWeight:700, cursor:nameInput&&birthInput.length===6?"pointer":"not-allowed", fontSize:15 }}>확인 →</button>
+      </div>
+    </div>
+  );
+  if (step===2) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"11px 16px", display:"flex", alignItems:"center", gap:11 }}>
+        <button onClick={()=>setStep(1)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 11px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>진료과 선택</span>
+      </div>
+      <div style={{ flex:1, padding:11, background:t.bg, display:"grid", gridTemplateColumns:"1fr 1fr", gap:9, overflowY:"auto" }}>
+        {depts.map(d=>(
+          <button key={d.id} onClick={()=>{ setDept(d); setStep(4); }}
+            style={{ background:"#fff", border:dept?.id===d.id?`2px solid ${t.primary}`:"2px solid transparent", borderRadius:13, padding:"13px 9px", cursor:"pointer", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.07)" }}>
+            <div style={{ fontSize:28, marginBottom:5 }}>{d.emoji}</div>
+            <div style={{ fontWeight:700, fontSize:13, color:"#222" }}>{d.name}</div>
+            <div style={{ fontSize:10, color:"#888", marginTop:3 }}>대기 {d.wait}명</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  if (step===3) return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"13px 16px", display:"flex", alignItems:"center", gap:11 }}>
+        <button onClick={()=>setStep(1)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:8, padding:"5px 11px", cursor:"pointer" }}>←</button>
+        <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>수납/결제</span>
+      </div>
+      <div style={{ flex:1, padding:14, background:t.bg }}>
+        <div style={{ background:"#fff", borderRadius:15, padding:18, boxShadow:"0 2px 12px rgba(0,0,0,0.07)", marginBottom:11 }}>
+          <p style={{ fontWeight:700, margin:"0 0 13px", color:"#444" }}>미수납 내역</p>
+          {[["진찰료","15,000원"],["검사비","28,000원"],["약제비","8,500원"]].map(([k,v])=>(
+            <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:"1px solid #f5f5f5", fontSize:13, color:"#555" }}><span>{k}</span><span>{v}</span></div>
+          ))}
+          <div style={{ display:"flex", justifyContent:"space-between", paddingTop:9, fontWeight:800, color:t.primary, fontSize:16 }}><span>총 수납금액</span><span>51,500원</span></div>
+        </div>
+        <div style={{ background:"#fff", borderRadius:15, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.07)" }}>
+          <p style={{ fontWeight:700, margin:"0 0 11px", color:"#444" }}>결제 방법</p>
+          {["💳 신용카드","💛 카카오페이","💵 현금"].map(m=>(
+            <button key={m} onClick={()=>setStep(4)} style={{ display:"block", width:"100%", padding:"13px 14px", marginBottom:7, background:"#f5f7ff", border:"none", borderRadius:9, cursor:"pointer", textAlign:"left", fontWeight:600, fontSize:14, color:"#333" }}>{m}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
+      <div style={{ background:t.header, padding:"13px 16px" }}><span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>완료</span></div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:22, gap:14, background:t.bg }}>
+        <div style={{ fontSize:70 }}>✅</div>
+        <h2 style={{ margin:0, fontSize:22, fontWeight:900, color:"#222", textAlign:"center" }}>
+          {service?.id==="checkin"?"접수 완료":service?.id==="payment"?"수납 완료":"발급 완료"}
+        </h2>
+        <div style={{ background:"#fff", borderRadius:15, padding:22, width:"100%", boxShadow:"0 4px 16px rgba(0,0,0,0.08)", textAlign:"center" }}>
+          {service?.id==="checkin"&&dept ? (
+            <>
+              <div style={{ fontSize:14, color:"#888", marginBottom:3 }}>{dept.name} 대기번호</div>
+              <div style={{ fontSize:54, fontWeight:900, color:t.primary }}>{10+dept.wait}</div>
+              <div style={{ color:"#888", fontSize:12, marginTop:7 }}>현재 대기 {dept.wait}명 · 예상 대기시간 약 {dept.wait*8}분</div>
+            </>
+          ) : (
+            <><div style={{ fontSize:54 }}>✓</div><p style={{ color:"#666", margin:0, fontSize:14 }}>처리가 완료되었습니다</p></>
+          )}
+          <p style={{ color:"#aaa", margin:"11px 0 0", fontSize:11 }}>영수증이 필요하신 경우 하단 프린터에서 출력해 주세요</p>
+        </div>
+      </div>
+      <div style={{ padding:14, background:"#fff" }}>
+        <button onClick={()=>{ setStep(0); setDept(null); setNameInput(""); setBirthInput(""); }}
+          style={{ width:"100%", padding:14, background:t.primary, color:"#fff", border:"none", borderRadius:11, fontWeight:700, cursor:"pointer", fontSize:15 }}>처음으로</button>
+      </div>
+    </div>
+  );
+};
+
+// ─── 메인 앱 ─────────────────────────────────────────────────
+function KioskApp() {
+  const [selected, setSelected] = useState(null);
+  const kioskList = [
+    { id:"fastfood", Component:FastFoodKiosk },
+    { id:"bank",     Component:BankKiosk     },
+    { id:"pharmacy", Component:PharmacyKiosk },
+    { id:"hospital", Component:HospitalKiosk },
+  ];
+  if (selected) {
+    const item = kioskList.find(k=>k.id===selected);
+    const t = THEMES[selected];
+    return (
+      <div style={{ height:"100vh", maxWidth:420, margin:"0 auto", background:"#fff", display:"flex", flexDirection:"column", fontFamily:"'Noto Sans KR','Apple SD Gothic Neo',sans-serif", overflow:"hidden", boxShadow:"0 0 40px rgba(0,0,0,0.2)" }}>
+        <div style={{ background:"#1a1a2e", padding:"7px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", gap:5 }}>{["#ff5f57","#febc2e","#28c840"].map((c,i)=><div key={i} style={{ width:9, height:9, borderRadius:"50%", background:c }}/>)}</div>
+          <span style={{ color:"#666", fontSize:10 }}>키오스크 시뮬레이터 · {t.label} {t.emoji}</span>
+          <div style={{ width:28 }}/>
+        </div>
+        <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+          <item.Component onBack={()=>setSelected(null)} theme={t}/>
+        </div>
+        <div style={{ background:"#1a1a2e", padding:"5px 18px", display:"flex", justifyContent:"center", gap:22 }}>
+          {[["🏠","처음으로"],["🔍","큰화면"],["🔊","볼륨"],["🔔","직원호출"]].map(([emoji,label])=>(
+            <button key={label} onClick={label==="처음으로"?()=>setSelected(null):undefined}
+              style={{ background:"none", border:"none", color:"#888", fontSize:9, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
+              <span style={{ fontSize:14 }}>{emoji}</span><span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"'Noto Sans KR','Apple SD Gothic Neo',sans-serif", padding:18 }}>
+      <div style={{ textAlign:"center", marginBottom:36 }}>
+        <div style={{ fontSize:46, marginBottom:11 }}>🖥️</div>
+        <h1 style={{ color:"#fff", fontSize:26, fontWeight:900, margin:0, letterSpacing:-0.5 }}>키오스크 체험 훈련</h1>
+        <p style={{ color:"rgba(255,255,255,0.6)", fontSize:14, margin:"9px 0 0" }}>실제와 유사한 키오스크를 직접 사용해보세요</p>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, width:"100%", maxWidth:380 }}>
+        {Object.entries(THEMES).map(([id,t])=>(
+          <button key={id} onClick={()=>setSelected(id)}
+            style={{ background:"#fff", border:"none", borderRadius:18, padding:"26px 14px", cursor:"pointer", textAlign:"center", boxShadow:"0 8px 32px rgba(0,0,0,0.3)", transition:"all 0.2s", position:"relative", overflow:"hidden" }}
+            onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 16px 40px rgba(0,0,0,0.4)"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 8px 32px rgba(0,0,0,0.3)"; }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:4, background:t.primary, borderRadius:"18px 18px 0 0" }}/>
+            <div style={{ fontSize:42, marginBottom:9 }}>{t.emoji}</div>
+            <div style={{ fontWeight:800, fontSize:17, color:"#222" }}>{t.label}</div>
+            <div style={{ fontSize:10, color:"#aaa", marginTop:5 }}>키오스크</div>
+            <div style={{ marginTop:13, padding:"5px 14px", background:t.primary, color:"#fff", borderRadius:18, fontSize:12, fontWeight:700 }}>시작하기 →</div>
+          </button>
+        ))}
+      </div>
+      <p style={{ color:"rgba(255,255,255,0.3)", fontSize:11, marginTop:30, textAlign:"center" }}>인지재활 훈련용 키오스크 시뮬레이터</p>
+    </div>
+  );
+}
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<KioskApp />);
+
+  </script>
+</body>
+</html>
