@@ -4,682 +4,398 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#1e40af" />
-  <title>키오스크 체험 훈련 v1.2</title>
+  <title>키오스크 체험 훈련 v1.3</title>
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; background: #1d4ed8; }
-    body { overscroll-behavior: none; -webkit-text-size-adjust: 100%; touch-action: manipulation; font-family: "Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif; }
-    #root { width: 100%; height: 100%; min-height: 100svh; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg,#1e3a8a,#2563eb); }
-    button, input, select, textarea { font-family: inherit; -webkit-appearance: none; outline: none; }
-    button { touch-action: manipulation; cursor: pointer; }
-    ::-webkit-scrollbar { width: 3px; height: 3px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
-    .kiosk-root { width: 100%; max-width: 500px; height: 100svh; background: #fff; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-    @media (min-width: 768px) { .kiosk-root { max-width: 480px; box-shadow: 0 0 60px rgba(0,0,0,0.35); } }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+    html,body{width:100%;height:100%;background:#1d4ed8}
+    body{overscroll-behavior:none;-webkit-text-size-adjust:100%;touch-action:manipulation;font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif}
+    #root{width:100%;display:flex;align-items:flex-start;justify-content:center;min-height:100%;padding:0}
+    button,input,select,textarea{font-family:inherit;-webkit-appearance:none;outline:none}
+    button{touch-action:manipulation;cursor:pointer}
+    ::-webkit-scrollbar{width:3px;height:3px}
+    ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
+    .kw{width:100%;max-width:480px;min-height:100vh;background:#fff;display:flex;flex-direction:column;overflow:hidden;position:relative}
+    @media(min-width:500px){.kw{box-shadow:0 0 60px rgba(0,0,0,0.4)}}
+    img.food{object-fit:cover;width:100%;height:100%;display:block}
+    .food-wrap{overflow:hidden;background:#f0f4f8}
   </style>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-const { useState, useRef, useEffect } = React;
-const APP_VER = "1.2";
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef,useCallback}=React;
+const VER="1.3";
 
-// ─── 색상 테마 ────────────────────────────────────────────────
-const THEMES = {
-  fastfood: { primary:"#2563eb", secondary:"#60a5fa", bg:"#f8faff", header:"#2563eb", accent:"#f59e0b", label:"패스트푸드", emoji:"🍔" },
-  bank:     { primary:"#003087", secondary:"#0066CC", bg:"#F0F4FF", header:"#003087", accent:"#FFD700", label:"은행",       emoji:"🏦" },
-  pharmacy: { primary:"#00874A", secondary:"#00B760", bg:"#F0FFF8", header:"#00874A", accent:"#00B760", label:"약국",       emoji:"💊" },
-  hospital: { primary:"#0077B6", secondary:"#00B4D8", bg:"#F0F8FF", header:"#0077B6", accent:"#48CAE4", label:"병원",       emoji:"🏥" },
+// ─── 테마 ────────────────────────────────────────────────────
+const THEMES={
+  fastfood:{primary:"#2563eb",secondary:"#60a5fa",bg:"#f8faff",header:"#2563eb",accent:"#f59e0b",label:"패스트푸드",emoji:"🍔"},
+  bank:    {primary:"#003087",secondary:"#0066CC",bg:"#F0F4FF",header:"#003087",accent:"#FFD700",label:"은행",      emoji:"🏦"},
+  pharmacy:{primary:"#00874A",secondary:"#00B760",bg:"#F0FFF8",header:"#00874A",accent:"#00B760",label:"약국",      emoji:"💊"},
+  hospital:{primary:"#0077B6",secondary:"#00B4D8",bg:"#F0F8FF",header:"#0077B6",accent:"#48CAE4",label:"병원",      emoji:"🏥"},
 };
 
-// ─── 토핑 데이터 ──────────────────────────────────────────────
-const TOPPING_GROUPS = [
-  { groupId:"veg",    groupName:"야채",    emoji:"🥬", items:[
-    { id:"lettuce",  name:"양상추",   emoji:"🥬", price:0,   kcal:2,  defaultOn:true  },
-    { id:"onion",    name:"양파",     emoji:"🧅", price:0,   kcal:3,  defaultOn:true  },
-    { id:"tomato",   name:"토마토",   emoji:"🍅", price:0,   kcal:5,  defaultOn:true  },
-    { id:"pickle",   name:"피클",     emoji:"🥒", price:0,   kcal:2,  defaultOn:true  },
-    { id:"jalapeno", name:"할라피뇨", emoji:"🌶️", price:300, kcal:4,  defaultOn:false },
+// ─── 토핑 ────────────────────────────────────────────────────
+const TOPPING_GROUPS=[
+  {groupId:"veg",   groupName:"야채",    emoji:"🥬",items:[
+    {id:"lettuce", name:"양상추",  emoji:"🥬",price:0,  kcal:2, defaultOn:true },
+    {id:"onion",   name:"양파",    emoji:"🧅",price:0,  kcal:3, defaultOn:true },
+    {id:"tomato",  name:"토마토",  emoji:"🍅",price:0,  kcal:5, defaultOn:true },
+    {id:"pickle",  name:"피클",    emoji:"🥒",price:0,  kcal:2, defaultOn:true },
+    {id:"jalapeno",name:"할라피뇨",emoji:"🌶️",price:300,kcal:4, defaultOn:false},
   ]},
-  { groupId:"cheese", groupName:"치즈",   emoji:"🧀", items:[
-    { id:"slice_cheese", name:"슬라이스치즈", emoji:"🧀", price:300, kcal:43, defaultOn:false },
-    { id:"cheddar",      name:"체다치즈",    emoji:"🧀", price:400, kcal:50, defaultOn:false },
-    { id:"mozzarella",   name:"모짜렐라",    emoji:"🧀", price:500, kcal:60, defaultOn:false },
+  {groupId:"cheese",groupName:"치즈",   emoji:"🧀",items:[
+    {id:"slice_cheese",name:"슬라이스치즈",emoji:"🧀",price:300,kcal:43,defaultOn:false},
+    {id:"cheddar",     name:"체다치즈",   emoji:"🧀",price:400,kcal:50,defaultOn:false},
+    {id:"mozzarella",  name:"모짜렐라",   emoji:"🧀",price:500,kcal:60,defaultOn:false},
   ]},
-  { groupId:"sauce",  groupName:"소스",   emoji:"🍶", items:[
-    { id:"ketchup", name:"케첩",        emoji:"🍅", price:0,   kcal:15, defaultOn:true  },
-    { id:"mustard", name:"머스타드",    emoji:"🌼", price:0,   kcal:10, defaultOn:false },
-    { id:"mayo",    name:"마요네즈",    emoji:"🥚", price:0,   kcal:30, defaultOn:false },
-    { id:"bbq",     name:"BBQ소스",     emoji:"🔥", price:200, kcal:25, defaultOn:false },
-    { id:"spicy",   name:"스파이시소스",emoji:"🌶️", price:200, kcal:20, defaultOn:false },
-    { id:"ranch",   name:"랜치소스",    emoji:"🥛", price:200, kcal:35, defaultOn:false },
+  {groupId:"sauce", groupName:"소스",   emoji:"🍶",items:[
+    {id:"ketchup",name:"케첩",       emoji:"🍅",price:0,  kcal:15,defaultOn:true },
+    {id:"mustard",name:"머스타드",   emoji:"🌼",price:0,  kcal:10,defaultOn:false},
+    {id:"mayo",   name:"마요네즈",   emoji:"🥚",price:0,  kcal:30,defaultOn:false},
+    {id:"bbq",    name:"BBQ소스",    emoji:"🔥",price:200,kcal:25,defaultOn:false},
+    {id:"spicy",  name:"스파이시소스",emoji:"🌶️",price:200,kcal:20,defaultOn:false},
+    {id:"ranch",  name:"랜치소스",   emoji:"🥛",price:200,kcal:35,defaultOn:false},
   ]},
-  { groupId:"extra",  groupName:"추가재료",emoji:"➕", items:[
-    { id:"patty",   name:"패티추가",   emoji:"🥩", price:1500, kcal:200, defaultOn:false },
-    { id:"bacon",   name:"베이컨",     emoji:"🥓", price:800,  kcal:80,  defaultOn:false },
-    { id:"egg",     name:"달걀프라이", emoji:"🍳", price:700,  kcal:90,  defaultOn:false },
-    { id:"avocado", name:"아보카도",   emoji:"🥑", price:1000, kcal:80,  defaultOn:false },
+  {groupId:"extra", groupName:"추가재료",emoji:"➕",items:[
+    {id:"patty",  name:"패티추가",   emoji:"🥩",price:1500,kcal:200,defaultOn:false},
+    {id:"bacon",  name:"베이컨",     emoji:"🥓",price:800, kcal:80, defaultOn:false},
+    {id:"egg",    name:"달걀프라이", emoji:"🍳",price:700, kcal:90, defaultOn:false},
+    {id:"avocado",name:"아보카도",   emoji:"🥑",price:1000,kcal:80, defaultOn:false},
   ]},
 ];
-const MENU_DEFAULT_TOPPINGS = {
-  1: { lettuce:true,  onion:true,  tomato:true,  pickle:true,  jalapeno:false, slice_cheese:false, cheddar:false, mozzarella:false, ketchup:true,  mustard:false, mayo:false, bbq:false, spicy:false, ranch:false, patty:false, bacon:false, egg:false, avocado:false },
-  2: { lettuce:true,  onion:true,  tomato:false, pickle:true,  jalapeno:false, slice_cheese:false, cheddar:false, mozzarella:false, ketchup:false, mustard:false, mayo:true,  bbq:false, spicy:false, ranch:false, patty:false, bacon:false, egg:false, avocado:false },
-  3: { lettuce:true,  onion:false, tomato:true,  pickle:false, jalapeno:false, slice_cheese:false, cheddar:false, mozzarella:false, ketchup:false, mustard:false, mayo:false, bbq:false, spicy:false, ranch:true,  patty:false, bacon:false, egg:false, avocado:false },
-  4: { lettuce:false, onion:true,  tomato:false, pickle:true,  jalapeno:false, slice_cheese:true,  cheddar:false, mozzarella:false, ketchup:true,  mustard:true,  mayo:false, bbq:false, spicy:false, ranch:false, patty:false, bacon:false, egg:false, avocado:false },
+const MDT={
+  1:{lettuce:true,onion:true,tomato:true,pickle:true,jalapeno:false,slice_cheese:false,cheddar:false,mozzarella:false,ketchup:true, mustard:false,mayo:false,bbq:false,spicy:false,ranch:false,patty:false,bacon:false,egg:false,avocado:false},
+  2:{lettuce:true,onion:true,tomato:false,pickle:true,jalapeno:false,slice_cheese:false,cheddar:false,mozzarella:false,ketchup:false,mustard:false,mayo:true, bbq:false,spicy:false,ranch:false,patty:false,bacon:false,egg:false,avocado:false},
+  3:{lettuce:true,onion:false,tomato:true,pickle:false,jalapeno:false,slice_cheese:false,cheddar:false,mozzarella:false,ketchup:false,mustard:false,mayo:false,bbq:false,spicy:false,ranch:true, patty:false,bacon:false,egg:false,avocado:false},
+  4:{lettuce:false,onion:true,tomato:false,pickle:true,jalapeno:false,slice_cheese:true, cheddar:false,mozzarella:false,ketchup:true, mustard:true, mayo:false,bbq:false,spicy:false,ranch:false,patty:false,bacon:false,egg:false,avocado:false},
 };
-const HAS_TOPPINGS = { 1:true, 2:true, 3:true, 4:true };
-
-function initToppings(menuId) {
-  const d = MENU_DEFAULT_TOPPINGS[menuId];
-  if (d) return {...d};
-  const s = {};
-  TOPPING_GROUPS.forEach(g => g.items.forEach(i => { s[i.id]=false; }));
-  return s;
-}
-function calcToppingExtra(tops) {
-  let e=0; TOPPING_GROUPS.forEach(g=>g.items.forEach(i=>{ if(tops[i.id]&&i.price>0) e+=i.price; })); return e;
-}
-function toppingSummaryShort(tops, menuId) {
-  const d=MENU_DEFAULT_TOPPINGS[menuId]||{};
-  const a=[],r=[];
+function initT(id){const d=MDT[id];if(d)return{...d};const s={};TOPPING_GROUPS.forEach(g=>g.items.forEach(i=>{s[i.id]=false;}));return s;}
+function calcTE(tops){let e=0;TOPPING_GROUPS.forEach(g=>g.items.forEach(i=>{if(tops[i.id]&&i.price>0)e+=i.price;}));return e;}
+function tSum(tops,menuId){
+  const d=MDT[menuId]||{};const a=[],r=[];
   TOPPING_GROUPS.forEach(g=>g.items.forEach(i=>{
-    if(!d[i.id]&&tops[i.id]) a.push(i.name);
-    if(d[i.id]&&!tops[i.id]) r.push(i.name+" 제외");
+    if(!d[i.id]&&tops[i.id])a.push(i.name);
+    if(d[i.id]&&!tops[i.id])r.push(i.name+" 제외");
   }));
-  return [...r,...a].join(", ")||"기본 구성";
+  return[...r,...a].join(", ")||"기본 구성";
 }
 
-// ─── SVG 메뉴 일러스트 ──────────────────────────────────────
-// 각 메뉴를 SVG로 직접 그린 사실적인 일러스트
-const MenuIllustration = ({ type, size }) => {
-  size = size || 80;
-  const illustrations = {
-    // 불고기버거
-    bulgogi: (
-      <svg width={size} height={size*0.85} viewBox="0 0 120 102" fill="none">
-        {/* 번 위 */}
-        <ellipse cx="60" cy="20" rx="44" ry="18" fill="#D4852A"/>
-        <ellipse cx="60" cy="16" rx="42" ry="15" fill="#E8983A"/>
-        <ellipse cx="60" cy="12" rx="38" ry="12" fill="#F0A840"/>
-        <ellipse cx="44" cy="8" rx="12" ry="5" fill="rgba(255,255,255,0.15)"/>
-        {/* 참깨 */}
-        <ellipse cx="50" cy="7" rx="3" ry="1.5" fill="#F5E6C0"/>
-        <ellipse cx="64" cy="5" rx="3" ry="1.5" fill="#F5E6C0"/>
-        <ellipse cx="74" cy="10" rx="3" ry="1.5" fill="#F5E6C0"/>
-        <ellipse cx="42" cy="12" rx="3" ry="1.5" fill="#F5E6C0"/>
-        {/* 양상추 */}
-        <path d="M14 44 Q30 36 60 44 Q90 52 106 44" stroke="#4a9c35" strokeWidth="8" fill="none" strokeLinecap="round"/>
-        <path d="M16 46 Q35 40 60 46 Q85 52 104 46" stroke="#5cb845" strokeWidth="4" fill="none" strokeLinecap="round"/>
-        {/* 불고기 패티 */}
-        <rect x="14" y="52" width="92" height="16" rx="8" fill="#8B3A0F"/>
-        <rect x="16" y="53" width="88" height="7" rx="5" fill="#A0440F" opacity="0.6"/>
-        {/* 소스 */}
-        <path d="M14 50 Q35 44 60 50 Q85 56 106 50" stroke="#CC3300" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.8"/>
-        {/* 토마토 */}
-        <ellipse cx="38" cy="48" rx="10" ry="4" fill="#E8372A" opacity="0.85"/>
-        <ellipse cx="82" cy="46" rx="10" ry="4" fill="#E8372A" opacity="0.85"/>
-        {/* 번 아래 */}
-        <ellipse cx="60" cy="82" rx="44" ry="12" fill="#C4751A"/>
-        <ellipse cx="60" cy="79" rx="44" ry="10" fill="#D8882E"/>
-        <ellipse cx="60" cy="77" rx="42" ry="8" fill="#E89838"/>
-      </svg>
-    ),
-    // 치킨버거
-    chicken: (
-      <svg width={size} height={size*0.85} viewBox="0 0 120 102" fill="none">
-        <ellipse cx="60" cy="20" rx="44" ry="18" fill="#D4852A"/>
-        <ellipse cx="60" cy="12" rx="38" ry="12" fill="#F0A840"/>
-        <ellipse cx="44" cy="8" rx="12" ry="5" fill="rgba(255,255,255,0.15)"/>
-        <ellipse cx="52" cy="7" rx="3" ry="1.5" fill="#F5E6C0"/>
-        <ellipse cx="66" cy="5" rx="3" ry="1.5" fill="#F5E6C0"/>
-        <ellipse cx="73" cy="11" rx="3" ry="1.5" fill="#F5E6C0"/>
-        {/* 양상추 */}
-        <path d="M14 44 Q30 36 60 44 Q90 52 106 44" stroke="#4a9c35" strokeWidth="8" fill="none" strokeLinecap="round"/>
-        {/* 치킨 패티 (크리스피) */}
-        <rect x="12" y="50" width="96" height="18" rx="7" fill="#C8860A"/>
-        <rect x="14" y="51" width="92" height="8" rx="5" fill="#D89A1A" opacity="0.5"/>
-        {/* 크리스피 텍스처 */}
-        <circle cx="28" cy="56" r="3" fill="#E8A820" opacity="0.4"/>
-        <circle cx="50" cy="54" r="4" fill="#E8A820" opacity="0.4"/>
-        <circle cx="70" cy="58" r="3" fill="#E8A820" opacity="0.4"/>
-        <circle cx="90" cy="55" r="4" fill="#E8A820" opacity="0.4"/>
-        {/* 마요소스 */}
-        <path d="M20 49 Q40 44 60 49 Q80 54 100 49" stroke="#F5F0D0" strokeWidth="3" fill="none" opacity="0.7"/>
-        <ellipse cx="60" cy="79" rx="44" ry="10" fill="#D8882E"/>
-        <ellipse cx="60" cy="77" rx="42" ry="8" fill="#E89838"/>
-      </svg>
-    ),
-    // 새우버거
-    shrimp: (
-      <svg width={size} height={size*0.85} viewBox="0 0 120 102" fill="none">
-        <ellipse cx="60" cy="20" rx="44" ry="18" fill="#D4852A"/>
-        <ellipse cx="60" cy="12" rx="38" ry="12" fill="#F0A840"/>
-        <ellipse cx="44" cy="8" rx="12" ry="5" fill="rgba(255,255,255,0.15)"/>
-        <ellipse cx="52" cy="7" rx="3" ry="1.5" fill="#F5E6C0"/>
-        <ellipse cx="66" cy="5" rx="3" ry="1.5" fill="#F5E6C0"/>
-        {/* 양상추 */}
-        <path d="M14 42 Q30 34 60 42 Q90 50 106 42" stroke="#4a9c35" strokeWidth="8" fill="none" strokeLinecap="round"/>
-        {/* 새우 패티 */}
-        <rect x="12" y="48" width="96" height="16" rx="8" fill="#E8734A"/>
-        <rect x="14" y="49" width="92" height="7" rx="5" fill="#F08060" opacity="0.5"/>
-        {/* 새우 형태 힌트 */}
-        <path d="M25 54 Q35 50 45 54 Q55 58 65 54 Q75 50 85 54 Q90 56 95 54" stroke="#F5A070" strokeWidth="3" fill="none"/>
-        {/* 랜치소스 */}
-        <path d="M18 47 Q40 42 60 47 Q80 52 102 47" stroke="#F5F0D0" strokeWidth="3" fill="none" opacity="0.8"/>
-        {/* 토마토 */}
-        <ellipse cx="40" cy="46" rx="10" ry="4" fill="#E8372A" opacity="0.85"/>
-        <ellipse cx="80" cy="44" rx="10" ry="4" fill="#E8372A" opacity="0.85"/>
-        <ellipse cx="60" cy="79" rx="44" ry="10" fill="#D8882E"/>
-        <ellipse cx="60" cy="77" rx="42" ry="8" fill="#E89838"/>
-      </svg>
-    ),
-    // 치즈버거
-    cheese_burger: (
-      <svg width={size} height={size*0.85} viewBox="0 0 120 102" fill="none">
-        <ellipse cx="60" cy="20" rx="44" ry="18" fill="#D4852A"/>
-        <ellipse cx="60" cy="12" rx="38" ry="12" fill="#F0A840"/>
-        <ellipse cx="44" cy="8" rx="12" ry="5" fill="rgba(255,255,255,0.15)"/>
-        <ellipse cx="52" cy="7" rx="3" ry="1.5" fill="#F5E6C0"/>
-        <ellipse cx="66" cy="5" rx="3" ry="1.5" fill="#F5E6C0"/>
-        {/* 양파 */}
-        <path d="M18 42 Q40 37 60 42 Q80 47 102 42" stroke="#D4A820" strokeWidth="5" fill="none" opacity="0.7"/>
-        {/* 치즈 */}
-        <rect x="10" y="48" width="100" height="8" rx="3" fill="#F5C842" opacity="0.95"/>
-        <path d="M10 56 L15 62 L105 62 L110 56 Z" fill="#F5C842" opacity="0.5"/>
-        {/* 패티 */}
-        <rect x="12" y="55" width="96" height="16" rx="8" fill="#8B3A0F"/>
-        <rect x="14" y="56" width="92" height="7" rx="5" fill="#A0440F" opacity="0.5"/>
-        {/* 케첩+머스타드 */}
-        <path d="M18 54 Q40 49 60 54 Q80 59 102 54" stroke="#CC3300" strokeWidth="2.5" fill="none"/>
-        <path d="M20 52 Q40 47 60 52 Q80 57 100 52" stroke="#D4A000" strokeWidth="2" fill="none" opacity="0.8"/>
-        <ellipse cx="60" cy="82" rx="44" ry="12" fill="#C4751A"/>
-        <ellipse cx="60" cy="79" rx="44" ry="10" fill="#D8882E"/>
-        <ellipse cx="60" cy="77" rx="42" ry="8" fill="#E89838"/>
-      </svg>
-    ),
-    // 감자튀김
-    fries: (
-      <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-        {/* 컵 */}
-        <path d="M25 45 L30 90 L70 90 L75 45 Z" fill="#E8001D"/>
-        <path d="M25 45 L30 90 L50 90 L50 45 Z" fill="#CC0018" opacity="0.5"/>
-        {/* 컵 줄무늬 */}
-        <path d="M35 45 L38 90" stroke="#FFD700" strokeWidth="2.5"/>
-        <path d="M62 45 L60 90" stroke="#FFD700" strokeWidth="2.5"/>
-        {/* 감자튀김들 */}
-        <rect x="38" y="10" width="8" height="40" rx="4" fill="#F5C842"/>
-        <rect x="38" y="10" width="8" height="40" rx="4" fill="#E8B830" opacity="0.5"/>
-        <rect x="46" y="5" width="8" height="44" rx="4" fill="#F5C842"/>
-        <rect x="55" y="8" width="8" height="42" rx="4" fill="#F5C842"/>
-        <rect x="28" y="12" width="8" height="38" rx="4" fill="#E8B830"/>
-        <rect x="64" y="14" width="8" height="36" rx="4" fill="#E8B830"/>
-        {/* 튀김 음영 */}
-        <rect x="38" y="10" width="3" height="40" rx="2" fill="#D4A020" opacity="0.4"/>
-        <rect x="46" y="5" width="3" height="44" rx="2" fill="#D4A020" opacity="0.4"/>
-        {/* 컵 상단 테두리 */}
-        <rect x="22" y="43" width="56" height="6" rx="3" fill="#CC0018"/>
-        <text x="50" y="73" textAnchor="middle" fill="#FFD700" fontSize="9" fontWeight="bold">SNUBH</text>
-      </svg>
-    ),
-    // 콜라
-    cola: (
-      <svg width={size*0.75} height={size} viewBox="0 0 75 100" fill="none">
-        {/* 컵 */}
-        <path d="M15 20 L10 90 L65 90 L60 20 Z" fill="#1a1a2e"/>
-        <path d="M15 20 L10 90 L40 90 L40 20 Z" fill="#0a0a1e" opacity="0.4"/>
-        {/* 얼음 */}
-        <rect x="18" y="50" width="15" height="12" rx="3" fill="rgba(180,220,255,0.5)"/>
-        <rect x="40" y="55" width="14" height="11" rx="3" fill="rgba(180,220,255,0.45)"/>
-        {/* 음료색 */}
-        <path d="M12 45 L10 90 L65 90 L63 45 Z" fill="#3d1a00" opacity="0.7"/>
-        {/* 로고 */}
-        <text x="37" y="72" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="7">Coca-Cola</text>
-        {/* 컵 테두리 */}
-        <rect x="13" y="17" width="49" height="7" rx="3.5" fill="#333"/>
-        {/* 빨대 */}
-        <rect x="48" y="2" width="5" height="55" rx="2.5" fill="#e2e8f0"/>
-        <rect x="48" y="2" width="2" height="55" rx="1.5" fill="rgba(255,255,255,0.5)"/>
-        {/* 거품 */}
-        <ellipse cx="25" cy="43" rx="5" ry="3" fill="rgba(255,255,255,0.3)"/>
-        <ellipse cx="38" cy="41" rx="6" ry="3" fill="rgba(255,255,255,0.25)"/>
-        <ellipse cx="52" cy="44" rx="4" ry="2.5" fill="rgba(255,255,255,0.3)"/>
-      </svg>
-    ),
-    // 치즈스틱
-    cheese_stick: (
-      <svg width={size} height={size*0.65} viewBox="0 0 110 72" fill="none">
-        {/* 소스컵 */}
-        <path d="M80 35 L83 68 L105 68 L108 35 Z" fill="#E8001D"/>
-        <rect x="78" y="32" width="32" height="6" rx="3" fill="#CC0018"/>
-        <ellipse cx="94" cy="38" rx="12" ry="3" fill="#FF6644" opacity="0.6"/>
-        {/* 치즈스틱 4개 */}
-        <rect x="5" y="20" width="68" height="14" rx="7" fill="#F0A820"/>
-        <rect x="5" y="20" width="68" height="6" rx="5" fill="#F5C040" opacity="0.6"/>
-        <rect x="5" y="38" width="68" height="14" rx="7" fill="#E89818"/>
-        <rect x="5" y="38" width="68" height="6" rx="5" fill="#F5B828" opacity="0.6"/>
-        <rect x="5" y="4" width="65" height="13" rx="6.5" fill="#F0A820"/>
-        <rect x="5" y="56" width="66" height="13" rx="6.5" fill="#E89818"/>
-        {/* 치즈 흘러내림 */}
-        <path d="M20 34 Q22 38 20 42" stroke="#F5C842" strokeWidth="3" fill="none"/>
-        <path d="M45 34 Q47 38 45 42" stroke="#F5C842" strokeWidth="3" fill="none"/>
-        {/* 튀김 텍스처 점들 */}
-        <circle cx="15" cy="26" r="2" fill="#D4880A" opacity="0.5"/>
-        <circle cx="35" cy="24" r="2.5" fill="#D4880A" opacity="0.5"/>
-        <circle cx="55" cy="27" r="2" fill="#D4880A" opacity="0.5"/>
-      </svg>
-    ),
-    // 너겟
-    nugget: (
-      <svg width={size} height={size*0.75} viewBox="0 0 110 82" fill="none">
-        {/* 너겟 4조각 */}
-        <ellipse cx="28" cy="28" rx="24" ry="16" fill="#D4880A" transform="rotate(-15,28,28)"/>
-        <ellipse cx="28" cy="28" rx="22" ry="14" fill="#E8A020" transform="rotate(-15,28,28)"/>
-        <ellipse cx="82" cy="22" rx="22" ry="14" fill="#D4880A" transform="rotate(10,82,22)"/>
-        <ellipse cx="82" cy="22" rx="20" ry="12" fill="#E8A020" transform="rotate(10,82,22)"/>
-        <ellipse cx="30" cy="58" rx="25" ry="15" fill="#C87800" transform="rotate(5,30,58)"/>
-        <ellipse cx="30" cy="58" rx="23" ry="13" fill="#D89010" transform="rotate(5,30,58)"/>
-        <ellipse cx="80" cy="60" rx="24" ry="15" fill="#D4880A" transform="rotate(-8,80,60)"/>
-        <ellipse cx="80" cy="60" rx="22" ry="13" fill="#E8A020" transform="rotate(-8,80,60)"/>
-        {/* 튀김 텍스처 */}
-        <circle cx="22" cy="24" r="3" fill="#C07000" opacity="0.5"/>
-        <circle cx="35" cy="32" r="2.5" fill="#C07000" opacity="0.5"/>
-        <circle cx="76" cy="18" r="3" fill="#C07000" opacity="0.5"/>
-        <circle cx="88" cy="28" r="2.5" fill="#C07000" opacity="0.5"/>
-        {/* 소스컵 힌트 */}
-        <rect x="88" y="50" width="20" height="28" rx="4" fill="#E8001D"/>
-        <ellipse cx="98" cy="50" rx="10" ry="4" fill="#FF4422" opacity="0.6"/>
-      </svg>
-    ),
-    // 어니언링
-    onion_ring: (
-      <svg width={size} height={size*0.8} viewBox="0 0 110 88" fill="none">
-        {/* 어니언링 3개 쌓기 */}
-        <ellipse cx="55" cy="68" rx="48" ry="16" fill="#C07800"/>
-        <ellipse cx="55" cy="68" rx="40" ry="10" fill="#D08000" opacity="0.5"/>
-        <ellipse cx="55" cy="68" rx="26" ry="6" fill="#B06800" opacity="0.7"/>
-        <ellipse cx="55" cy="44" rx="44" ry="15" fill="#D08800"/>
-        <ellipse cx="55" cy="44" rx="36" ry="9" fill="#E09808" opacity="0.5"/>
-        <ellipse cx="55" cy="44" rx="22" ry="5" fill="#B06800" opacity="0.7"/>
-        <ellipse cx="55" cy="22" rx="40" ry="14" fill="#E09808"/>
-        <ellipse cx="55" cy="22" rx="32" ry="8" fill="#F0A818" opacity="0.5"/>
-        <ellipse cx="55" cy="22" rx="18" ry="4" fill="#C07800" opacity="0.7"/>
-        {/* 튀김 텍스처 */}
-        <circle cx="30" cy="20" r="3" fill="#C07000" opacity="0.6"/>
-        <circle cx="80" cy="23" r="3" fill="#C07000" opacity="0.6"/>
-        <circle cx="20" cy="45" r="3" fill="#C07000" opacity="0.5"/>
-        <circle cx="90" cy="42" r="3" fill="#C07000" opacity="0.5"/>
-      </svg>
-    ),
-    // 사이다
-    cider: (
-      <svg width={size*0.75} height={size} viewBox="0 0 75 100" fill="none">
-        <path d="M15 20 L10 90 L65 90 L60 20 Z" fill="#e8f5e8"/>
-        <path d="M12 45 L10 90 L65 90 L63 45 Z" fill="#c8f0c0" opacity="0.8"/>
-        <rect x="13" y="17" width="49" height="7" rx="3.5" fill="#a0d890"/>
-        <rect x="48" y="2" width="5" height="55" rx="2.5" fill="#e2e8f0"/>
-        <rect x="48" y="2" width="2" height="55" rx="1.5" fill="rgba(255,255,255,0.5)"/>
-        {/* 탄산 버블 */}
-        <circle cx="25" cy="75" r="2" fill="rgba(255,255,255,0.6)"/>
-        <circle cx="40" cy="65" r="1.5" fill="rgba(255,255,255,0.5)"/>
-        <circle cx="55" cy="80" r="1.5" fill="rgba(255,255,255,0.6)"/>
-        <circle cx="30" cy="55" r="2" fill="rgba(255,255,255,0.5)"/>
-        <text x="37" y="72" textAnchor="middle" fill="rgba(0,128,0,0.5)" fontSize="7">Sprite</text>
-      </svg>
-    ),
-    // 환타
-    fanta: (
-      <svg width={size*0.75} height={size} viewBox="0 0 75 100" fill="none">
-        <path d="M15 20 L10 90 L65 90 L60 20 Z" fill="#ff8800"/>
-        <path d="M12 45 L10 90 L65 90 L63 45 Z" fill="#ff6600" opacity="0.7"/>
-        <rect x="13" y="17" width="49" height="7" rx="3.5" fill="#e06600"/>
-        <rect x="48" y="2" width="5" height="55" rx="2.5" fill="#e2e8f0"/>
-        <rect x="48" y="2" width="2" height="55" rx="1.5" fill="rgba(255,255,255,0.5)"/>
-        <circle cx="25" cy="70" r="2" fill="rgba(255,255,255,0.5)"/>
-        <circle cx="42" cy="60" r="1.5" fill="rgba(255,255,255,0.4)"/>
-        <circle cx="55" cy="75" r="1.5" fill="rgba(255,255,255,0.5)"/>
-        <text x="37" y="72" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="7">Fanta</text>
-      </svg>
-    ),
-    // 제로콜라
-    zero_cola: (
-      <svg width={size*0.75} height={size} viewBox="0 0 75 100" fill="none">
-        <path d="M15 20 L10 90 L65 90 L60 20 Z" fill="#1a1a2e"/>
-        <path d="M12 45 L10 90 L65 90 L63 45 Z" fill="#0a0a1e" opacity="0.7"/>
-        <rect x="13" y="17" width="49" height="7" rx="3.5" fill="#333"/>
-        <rect x="48" y="2" width="5" height="55" rx="2.5" fill="#e2e8f0"/>
-        {/* ZERO 표시 */}
-        <text x="37" y="55" textAnchor="middle" fill="#C0392B" fontSize="10" fontWeight="bold">ZERO</text>
-        <text x="37" y="68" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="6">Coca-Cola</text>
-        <ellipse cx="35" cy="43" rx="10" ry="3" fill="rgba(255,255,255,0.15)"/>
-      </svg>
-    ),
-    // 아이스크림
-    ice_cream: (
-      <svg width={size*0.7} height={size} viewBox="0 0 70 100" fill="none">
-        {/* 콘 */}
-        <path d="M20 55 L35 95 L50 55 Z" fill="#D4880A"/>
-        <path d="M22 55 L35 92 L48 55 Z" fill="#E89820" opacity="0.6"/>
-        {/* 콘 줄무늬 */}
-        <path d="M25 58 L33 88" stroke="#C07000" strokeWidth="1.5" opacity="0.5"/>
-        <path d="M40 58 L37 88" stroke="#C07000" strokeWidth="1.5" opacity="0.5"/>
-        {/* 아이스크림 */}
-        <ellipse cx="35" cy="30" rx="22" ry="28" fill="#FFF5E0"/>
-        <ellipse cx="35" cy="22" rx="20" ry="14" fill="#fff" opacity="0.6"/>
-        {/* 아이스크림 결 */}
-        <path d="M18 35 Q25 28 35 35 Q45 42 52 35" stroke="#F0E0C0" strokeWidth="2.5" fill="none"/>
-        <path d="M18 42 Q25 35 35 42 Q45 49 52 42" stroke="#F0E0C0" strokeWidth="2.5" fill="none"/>
-        <path d="M22 28 Q30 22 40 28" stroke="#F0E0C0" strokeWidth="2" fill="none"/>
-      </svg>
-    ),
-    // 커피
-    coffee: (
-      <svg width={size*0.8} height={size} viewBox="0 0 80 100" fill="none">
-        {/* 컵 */}
-        <path d="M18 25 L14 88 L66 88 L62 25 Z" fill="#fff" stroke="#e2e8f0" strokeWidth="1.5"/>
-        <path d="M18 25 L14 88 L40 88 L40 25 Z" fill="#f8faff" opacity="0.5"/>
-        {/* 커피 내용물 */}
-        <path d="M20 50 L16 88 L64 88 L60 50 Z" fill="#5c3317"/>
-        {/* 크림/거품 */}
-        <ellipse cx="40" cy="50" rx="22" ry="6" fill="#d4a870"/>
-        <path d="M20 47 Q30 42 40 47 Q50 52 60 47" stroke="#e0b880" strokeWidth="3" fill="none"/>
-        {/* 손잡이 */}
-        <path d="M62 40 Q78 40 78 55 Q78 70 62 70" stroke="#e2e8f0" strokeWidth="5" fill="none"/>
-        {/* 뚜껑 */}
-        <rect x="16" y="21" width="48" height="7" rx="3.5" fill="#ddd"/>
-        <rect x="24" y="18" width="8" height="6" rx="2" fill="#ccc"/>
-        {/* 김 */}
-        <path d="M30 12 Q28 7 30 2" stroke="#ddd" strokeWidth="2" fill="none" opacity="0.5"/>
-        <path d="M40 10 Q38 5 40 0" stroke="#ddd" strokeWidth="2" fill="none" opacity="0.5"/>
-        <path d="M50 12 Q48 7 50 2" stroke="#ddd" strokeWidth="2" fill="none" opacity="0.5"/>
-        <text x="40" y="75" textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="7">COFFEE</text>
-      </svg>
-    ),
-    // 쉐이크
-    shake: (
-      <svg width={size*0.75} height={size} viewBox="0 0 75 100" fill="none">
-        <path d="M15 30 L12 88 L63 88 L60 30 Z" fill="#fff" stroke="#e2e8f0" strokeWidth="1.5"/>
-        <path d="M15 55 L12 88 L63 88 L60 55 Z" fill="#ffe0f0"/>
-        {/* 휘핑크림 */}
-        <path d="M10 30 Q20 15 37 12 Q55 10 65 30" fill="#fff" stroke="#eee" strokeWidth="1"/>
-        <path d="M15 30 Q22 20 37 17 Q52 14 60 30" fill="#fff"/>
-        <ellipse cx="38" cy="13" rx="8" ry="4" fill="#fff" stroke="#eee" strokeWidth="0.5"/>
-        {/* 빨대 */}
-        <rect x="52" y="5" width="5" height="50" rx="2.5" fill="#ff90c0"/>
-        <rect x="52" y="5" width="2" height="50" rx="1.5" fill="rgba(255,255,255,0.5)"/>
-        <text x="37" y="75" textAnchor="middle" fill="rgba(200,0,100,0.4)" fontSize="7">SHAKE</text>
-      </svg>
-    ),
-    // 기본
-    default: (
-      <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-        <circle cx="50" cy="50" r="40" fill="#f0f4ff"/>
-        <text x="50" y="62" textAnchor="middle" fontSize="36">🍽️</text>
-      </svg>
-    ),
-  };
-  return illustrations[type] || illustrations.default;
+// ─── 실물 음식 사진 URL (picsum/unsplash CDN) ─────────────────
+// Unsplash 무료 이미지를 food keyword로 지정
+const FOOD_IMGS = {
+  // 버거류 - 실제 버거 사진
+  bulgogi:      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop&q=80",
+  chicken:      "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&h=300&fit=crop&q=80",
+  shrimp:       "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&h=300&fit=crop&q=80",
+  cheese_burger:"https://images.unsplash.com/photo-1586816001966-79b736744398?w=400&h=300&fit=crop&q=80",
+  // 사이드
+  fries:        "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&h=300&fit=crop&q=80",
+  nugget:       "https://images.unsplash.com/photo-1619881590738-a111d176d906?w=400&h=300&fit=crop&q=80",
+  cheese_stick: "https://images.unsplash.com/photo-1541014741259-de529411b96a?w=400&h=300&fit=crop&q=80",
+  onion_ring:   "https://images.unsplash.com/photo-1639024471283-03518883512d?w=400&h=300&fit=crop&q=80",
+  coleslaw:     "https://images.unsplash.com/photo-1567608346944-08823b977b62?w=400&h=300&fit=crop&q=80",
+  // 음료
+  cola:         "https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop&q=80",
+  cider:        "https://images.unsplash.com/photo-1625772452859-1c03d884dcd7?w=400&h=300&fit=crop&q=80",
+  fanta:        "https://images.unsplash.com/photo-1624519628935-33b3cd8e56a6?w=400&h=300&fit=crop&q=80",
+  zero_cola:    "https://images.unsplash.com/photo-1570831739435-6601aa3fa4fb?w=400&h=300&fit=crop&q=80",
+  coffee:       "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=300&fit=crop&q=80",
+  // 디저트
+  ice_cream:    "https://images.unsplash.com/photo-1505394033641-40908add31e7?w=400&h=300&fit=crop&q=80",
+  shake:        "https://images.unsplash.com/photo-1572490122747-3b0e105a6a1f?w=400&h=300&fit=crop&q=80",
+  choco_sundae: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=300&fit=crop&q=80",
+  apple_pie:    "https://images.unsplash.com/photo-1621743478914-cc8a86d7e7b5?w=400&h=300&fit=crop&q=80",
+  oreo_shake:   "https://images.unsplash.com/photo-1604790926949-0f5f44e0da36?w=400&h=300&fit=crop&q=80",
 };
 
-// ─── v1.2 패스트푸드 키오스크 ────────────────────────────────
-const APP_VERSION = "1.2";
+// 음식 사진 컴포넌트
+function FoodImg({imgKey,alt,h}){
+  const [err,setErr]=useState(false);
+  const src=FOOD_IMGS[imgKey];
+  if(err||!src) return <div style={{width:"100%",height:h||100,background:"#e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>🍽️</div>;
+  return <img src={src} alt={alt||""} onError={()=>setErr(true)} style={{width:"100%",height:h||100,objectFit:"cover",display:"block"}}/>;
+}
 
-const SIZE_PRICES = {
-  fries: { S:1800, M:2200, L:2500 },
-  cola:  { S:1200, M:1500, L:1800 },
-  drink: { S:1200, M:1500, L:1800 },
-  shake: { S:3500, M:4200, L:4800 },
+// ─── 사이즈 가격 ──────────────────────────────────────────────
+const SP={
+  fries:{S:1800,M:2200,L:2500},
+  drink:{S:1200,M:1500,L:1800},
+  shake:{S:3500,M:4200,L:4800},
 };
 
-const FastFoodKiosk = ({ onBack, theme }) => {
-  const [step, setStep] = useState(0);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [toppings, setToppings] = useState({});
-  const [activeGroup, setActiveGroup] = useState("veg");
-  const [cart, setCart] = useState([]);
-  const [payMethod, setPayMethod] = useState(null);
-  const [orderType, setOrderType] = useState(null);
-  const [sizeModal, setSizeModal] = useState(null);
-  const [activeCat, setActiveCat] = useState("recommend");
-  const [burgerSubType, setBurgerSubType] = useState("single"); // single|set|largeset
-  const cartRef = useRef(null);
+// ─── 메뉴 데이터 ─────────────────────────────────────────────
+const BURGERS=[
+  {id:1,name:"불고기버거",  basePrice:5500,setAdd:2000,largeAdd:2500,kcal:490,img:"bulgogi",     tag:"인기",  desc:"달콤한 불고기 패티",  hasToppings:true},
+  {id:2,name:"치킨버거",    basePrice:6200,setAdd:2000,largeAdd:2500,kcal:530,img:"chicken",     tag:"신메뉴",desc:"바삭한 치킨 필렛",    hasToppings:true},
+  {id:3,name:"새우버거",    basePrice:6800,setAdd:2000,largeAdd:2500,kcal:460,img:"shrimp",      tag:"인기",  desc:"통새우 크리스피 패티", hasToppings:true},
+  {id:4,name:"더블치즈버거",basePrice:6500,setAdd:2000,largeAdd:2500,kcal:680,img:"cheese_burger",tag:"",     desc:"두툼한 비프&치즈",    hasToppings:true},
+];
+const SIDES=[
+  {id:10,name:"감자튀김",        price:2500,kcal:380,img:"fries",       tag:"인기",desc:"황금빛 크리스피",    hasToppings:false,hasSize:"fries"},
+  {id:11,name:"치킨너겟(6조각)", price:3200,kcal:310,img:"nugget",      tag:"",    desc:"바삭한 치킨너겟",    hasToppings:false},
+  {id:12,name:"치즈스틱(4조각)", price:2900,kcal:290,img:"cheese_stick",tag:"",    desc:"속이 꽉 찬 치즈스틱",hasToppings:false},
+  {id:13,name:"어니언링",        price:2600,kcal:320,img:"onion_ring",  tag:"",    desc:"바삭한 어니언링",    hasToppings:false},
+  {id:14,name:"코울슬로",        price:1500,kcal:150,img:"coleslaw",    tag:"",    desc:"신선한 채소 샐러드",  hasToppings:false},
+];
+const DRINKS=[
+  {id:20,name:"콜라",    price:1800,kcal:200,img:"cola",     tag:"인기",desc:"코카콜라",      hasToppings:false,hasSize:"drink"},
+  {id:21,name:"사이다",  price:1800,kcal:190,img:"cider",    tag:"",    desc:"스프라이트",    hasToppings:false,hasSize:"drink"},
+  {id:22,name:"환타",    price:1800,kcal:210,img:"fanta",    tag:"",    desc:"오렌지 환타",   hasToppings:false,hasSize:"drink"},
+  {id:23,name:"제로콜라",price:1800,kcal:0,  img:"zero_cola",tag:"",    desc:"칼로리 ZERO",  hasToppings:false,hasSize:"drink"},
+  {id:24,name:"아이스 아메리카노",price:2200,kcal:10,img:"coffee",   tag:"",    desc:"진한 에스프레소", hasToppings:false},
+];
+const DESSERTS=[
+  {id:30,name:"소프트아이스크림",  price:1500,kcal:210,img:"ice_cream",  tag:"",    desc:"부드러운 바닐라",    hasToppings:false},
+  {id:31,name:"딸기쉐이크",        price:4200,kcal:480,img:"shake",      tag:"인기",desc:"진한 딸기쉐이크",    hasToppings:false,hasSize:"shake"},
+  {id:32,name:"초코선데",          price:2200,kcal:380,img:"choco_sundae",tag:"",   desc:"초코소스 토핑",      hasToppings:false},
+  {id:33,name:"애플파이",          price:1800,kcal:250,img:"apple_pie",  tag:"",    desc:"따뜻한 애플파이",    hasToppings:false},
+  {id:34,name:"쿠키앤크림쉐이크",  price:4500,kcal:520,img:"oreo_shake", tag:"",    desc:"오레오 크림쉐이크",  hasToppings:false,hasSize:"shake"},
+];
 
-  // 카테고리 정의 ("세트" 제거, 버거 내 subtype 선택)
-  const categories = [
-    { id:"recommend", label:"추천 메뉴", emoji:"⭐" },
-    { id:"burger",    label:"버거",      emoji:"🍔" },
-    { id:"side",      label:"사이드",    emoji:"🍟" },
-    { id:"drink",     label:"음료",      emoji:"🥤" },
-    { id:"dessert",   label:"디저트",    emoji:"🧁" },
-  ];
+// 추천 (각 섹션 대표 + 가격 노출용 단품 기준)
+const RECOMMENDS=[
+  {...BURGERS[0],_cat:"burger"},{...BURGERS[1],_cat:"burger"},
+  {...SIDES[0],  _cat:"side"},  {...SIDES[1],  _cat:"side"},
+  {...DRINKS[0], _cat:"drink"}, {...DRINKS[3], _cat:"drink"},
+  {...DESSERTS[0],_cat:"dessert"},{...DESSERTS[1],_cat:"dessert"},
+];
 
-  // 전체 메뉴
-  const BURGERS = [
-    { id:1, name:"불고기버거",   basePrice:5500, setExtra:2000, largeExtra:2500, kcal:490, illus:"bulgogi", tag:"인기",   desc:"달콤한 불고기 패티", hasToppings:true },
-    { id:2, name:"치킨버거",     basePrice:6200, setExtra:2000, largeExtra:2500, kcal:530, illus:"chicken", tag:"신메뉴", desc:"바삭한 치킨 필렛",   hasToppings:true },
-    { id:3, name:"새우버거",     basePrice:6800, setExtra:2000, largeExtra:2500, kcal:460, illus:"shrimp",  tag:"인기",   desc:"통새우 크리스피",    hasToppings:true },
-    { id:4, name:"치즈버거",     basePrice:5000, setExtra:2000, largeExtra:2500, kcal:510, illus:"cheese_burger", tag:"", desc:"두툼한 비프&치즈",  hasToppings:true },
-  ];
+const CATS=[
+  {id:"recommend",label:"추천 메뉴",emoji:"⭐"},
+  {id:"burger",   label:"버거",    emoji:"🍔"},
+  {id:"side",     label:"사이드",  emoji:"🍟"},
+  {id:"drink",    label:"음료",    emoji:"🥤"},
+  {id:"dessert",  label:"디저트",  emoji:"🧁"},
+];
 
-  const SIDES = [
-    { id:10, name:"감자튀김",       price:2500, kcal:380, illus:"fries",       tag:"인기", desc:"황금빛 크리스피", hasToppings:false, hasSize:"fries" },
-    { id:11, name:"치킨너겟(6조각)",price:3200, kcal:310, illus:"nugget",      tag:"",     desc:"바삭한 치킨너겟", hasToppings:false },
-    { id:12, name:"치즈스틱(4조각)",price:2900, kcal:290, illus:"cheese_stick",tag:"",     desc:"속이 꽉 찬 치즈", hasToppings:false },
-    { id:13, name:"어니언링",        price:2600, kcal:320, illus:"onion_ring",  tag:"",     desc:"바삭한 어니언링", hasToppings:false },
-    { id:14, name:"코울슬로",        price:1500, kcal:150, illus:"default",     tag:"",     desc:"신선한 채소 샐러드",hasToppings:false },
-  ];
-
-  const DRINKS = [
-    { id:20, name:"콜라",     price:1800, kcal:200, illus:"cola",      tag:"인기", desc:"코카콜라",      hasToppings:false, hasSize:"drink" },
-    { id:21, name:"사이다",   price:1800, kcal:190, illus:"cider",     tag:"",     desc:"스프라이트",    hasToppings:false, hasSize:"drink" },
-    { id:22, name:"환타",     price:1800, kcal:210, illus:"fanta",     tag:"",     desc:"오렌지 환타",   hasToppings:false, hasSize:"drink" },
-    { id:23, name:"제로콜라", price:1800, kcal:0,   illus:"zero_cola", tag:"",     desc:"칼로리 제로",   hasToppings:false, hasSize:"drink" },
-    { id:24, name:"커피",     price:2200, kcal:80,  illus:"coffee",    tag:"",     desc:"아이스 아메리카노", hasToppings:false },
-  ];
-
-  const DESSERTS = [
-    { id:30, name:"소프트아이스크림",price:1500, kcal:210, illus:"ice_cream", tag:"",     desc:"부드러운 바닐라",   hasToppings:false },
-    { id:31, name:"딸기쉐이크",      price:4200, kcal:480, illus:"shake",     tag:"인기", desc:"진한 딸기쉐이크",   hasToppings:false, hasSize:"shake" },
-    { id:32, name:"초코선데",        price:2200, kcal:380, illus:"default",   tag:"",     desc:"초코소스 토핑",     hasToppings:false },
-    { id:33, name:"애플파이",        price:1800, kcal:250, illus:"default",   tag:"",     desc:"따뜻한 애플파이",   hasToppings:false },
-    { id:34, name:"쿠키앤크림쉐이크",price:4500, kcal:520, illus:"shake",     tag:"",     desc:"오레오 크림쉐이크", hasToppings:false, hasSize:"shake" },
-  ];
-
-  // 추천 메뉴 (각 카테고리 대표)
-  const RECOMMENDS = [
-    {...BURGERS[0], cat:"burger"}, {...BURGERS[1], cat:"burger"},
-    {...SIDES[0], cat:"side"}, {...SIDES[1], cat:"side"},
-    {...DRINKS[0], cat:"drink"}, {...DRINKS[3], cat:"drink"},
-    {...DESSERTS[0], cat:"dessert"}, {...DESSERTS[1], cat:"dessert"},
-  ];
-
-  const getMenuItems = () => {
-    switch(activeCat) {
-      case "recommend": return RECOMMENDS;
-      case "burger": return BURGERS;
-      case "side": return SIDES;
-      case "drink": return DRINKS;
-      case "dessert": return DESSERTS;
-      default: return RECOMMENDS;
-    }
-  };
-
-  // 버거 단품/세트/라지세트 가격
-  const getBurgerPrice = (burger) => {
-    if (burgerSubType==="set") return burger.basePrice + burger.setExtra;
-    if (burgerSubType==="largeset") return burger.basePrice + burger.largeExtra;
-    return burger.basePrice;
-  };
-  const getBurgerDesc = (burger) => {
-    if (burgerSubType==="set") return burger.name+" 세트 (감자M+음료M)";
-    if (burgerSubType==="largeset") return burger.name+" 라지세트 (감자L+음료L)";
-    return burger.name;
-  };
+// ─── 패스트푸드 키오스크 v1.3 ────────────────────────────────
+function FastFoodKiosk({onBack,theme}){
+  const t=theme;
+  const [step,setStep]=useState(0);
+  const [selectedItem,setSelectedItem]=useState(null);
+  const [tops,setTops]=useState({});
+  const [activeGroup,setActiveGroup]=useState("veg");
+  const [cart,setCart]=useState([]);
+  const [payMethod,setPayMethod]=useState(null);
+  const [orderType,setOrderType]=useState(null);
+  const [modal,setModal]=useState(null);   // {type:"size"|"burger_type", item}
+  const [activeCat,setActiveCat]=useState("recommend");
+  const [cancelConfirm,setCancelConfirm]=useState(false);
 
   // 장바구니 계산
-  const itemUnitPrice = (item) => item.basePrice + (item.toppingExtra||0);
-  const itemTotal = (item) => itemUnitPrice(item) * item.qty;
-  const totalPrice = cart.reduce((s,i)=>s+itemTotal(i),0);
-  const totalQty = cart.reduce((s,c)=>s+c.qty,0);
+  const unitPrice=item=>item.basePrice+(item.toppingExtra||0);
+  const rowTotal=item=>unitPrice(item)*item.qty;
+  const grandTotal=cart.reduce((s,i)=>s+rowTotal(i),0);
+  const totalQty=cart.reduce((s,c)=>s+c.qty,0);
 
-  const addToCart = (item, tops, size, subType) => {
-    let basePrice = item.price || item.basePrice;
-    if (subType==="set") basePrice = item.basePrice + item.setExtra;
-    if (subType==="largeset") basePrice = item.basePrice + item.largeExtra;
-    if (size && item.hasSize) {
-      const sp = SIZE_PRICES[item.hasSize];
-      if (sp) basePrice = sp[size];
+  // 장바구니 추가
+  const addToCart=(item,toppings,size,subType)=>{
+    let bp=item.price??item.basePrice;
+    if(subType==="set")   bp=(item.basePrice||item.price)+(item.setAdd||2000);
+    if(subType==="large") bp=(item.basePrice||item.price)+(item.largeAdd||2500);
+    if(size&&item.hasSize){const sp=SP[item.hasSize];if(sp)bp=sp[size];}
+    const te=item.hasToppings?calcTE(toppings):0;
+    const displayName=subType==="set"?item.name+" 세트":subType==="large"?item.name+" 라지세트":item.name;
+    const ts=item.hasToppings?tSum(toppings,item.id):(size?"사이즈: "+size:null);
+    const key=item.id+"_"+(subType||"")+"_"+(size||"")+"_"+JSON.stringify(toppings||{});
+    setCart(prev=>{
+      const e=prev.find(c=>c.cartKey===key);
+      if(e) return prev.map(c=>c.cartKey===key?{...c,qty:c.qty+1}:c);
+      return[...prev,{...item,cartKey:key,displayName,basePrice:bp,toppingExtra:te,toppingSummary:ts,selectedSize:size,subType,qty:1}];
+    });
+  };
+  const removeOne=key=>setCart(prev=>{
+    const e=prev.find(c=>c.cartKey===key);
+    if(!e)return prev;
+    if(e.qty===1)return prev.filter(c=>c.cartKey!==key);
+    return prev.map(c=>c.cartKey===key?{...c,qty:c.qty-1}:c);
+  });
+  const addOne=key=>setCart(prev=>prev.map(c=>c.cartKey===key?{...c,qty:c.qty+1}:c));
+
+  // 카테고리별 메뉴
+  const getMenu=()=>{
+    if(activeCat==="recommend")return RECOMMENDS;
+    if(activeCat==="burger")   return BURGERS;
+    if(activeCat==="side")     return SIDES;
+    if(activeCat==="drink")    return DRINKS;
+    if(activeCat==="dessert")  return DESSERTS;
+    return RECOMMENDS;
+  };
+
+  // 카드 클릭
+  const handleCardClick=item=>{
+    setSelectedItem(item);
+    if(item._cat==="burger"||activeCat==="burger"){
+      // 버거: 단품/세트/라지세트 팝업
+      setModal({type:"burger_type",item});
+    } else if(item.hasToppings){
+      setTops(initT(item.id));setActiveGroup("veg");setStep(1.5);
+    } else if(item.hasSize){
+      setModal({type:"size",item});
+    } else {
+      addToCart(item,{},null,null);
     }
-    const toppingExtra = (item.hasToppings&&tops) ? calcToppingExtra(tops) : 0;
-    const nameFull = subType==="set"?item.name+" 세트":subType==="largeset"?item.name+" 라지세트":item.name;
-    const summary = item.hasToppings ? toppingSummaryShort(tops,item.id) : (size?"사이즈: "+size:null);
-    const key = item.id+"_"+subType+"_"+(size||"")+"_"+JSON.stringify(tops||{});
-    setCart(prev=>{
-      const exist = prev.find(c=>c.cartKey===key);
-      if(exist) return prev.map(c=>c.cartKey===key?{...c,qty:c.qty+1}:c);
-      return [...prev,{...item,cartKey:key,displayName:nameFull,basePrice,toppingExtra,toppingSummary:summary,selectedSize:size,selectedSubType:subType,qty:1}];
-    });
-  };
-  const removeOne = (cartKey) => {
-    setCart(prev=>{
-      const e=prev.find(c=>c.cartKey===cartKey);
-      if(!e) return prev;
-      if(e.qty===1) return prev.filter(c=>c.cartKey!==cartKey);
-      return prev.map(c=>c.cartKey===cartKey?{...c,qty:c.qty-1}:c);
-    });
-  };
-  const addOne = (cartKey) => {
-    setCart(prev=>prev.map(c=>c.cartKey===cartKey?{...c,qty:c.qty+1}:c));
   };
 
   // 버전 태그
-  const VTag = () => <div style={{textAlign:"right",background:"#fff",padding:"1px 8px 4px",flexShrink:0}}><span style={{fontSize:9,color:"#e2e8f0"}}>v{APP_VERSION}</span></div>;
+  const VTag=()=><div style={{textAlign:"right",background:"#fff",padding:"1px 8px 5px",flexShrink:0}}><span style={{fontSize:9,color:"#e2e8f0"}}>v{VER}</span></div>;
 
-  // 사이즈 모달
-  const SizeModal = () => {
-    if(!sizeModal) return null;
-    const sp = sizeModal.hasSize ? SIZE_PRICES[sizeModal.hasSize] : null;
-    if(!sp) return null;
-    return (
-      <div onClick={e=>{if(e.target===e.currentTarget)setSizeModal(null);}}
-        style={{position:"absolute",inset:0,background:"rgba(15,23,42,0.55)",zIndex:60,display:"flex",alignItems:"flex-end"}}>
-        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",padding:"20px 18px 30px"}}>
-          <div style={{width:36,height:4,background:"#e2e8f0",borderRadius:2,margin:"0 auto 18px"}}/>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
-            <div style={{width:52,height:52,background:"#f0f5ff",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <MenuIllustration type={sizeModal.illus} size={48}/>
+  // ── 팝업 모달 ────────────────────────────────────────────────
+  const Modal=()=>{
+    if(!modal)return null;
+    const item=modal.item;
+    // 버거 타입 선택 (단품/세트/라지세트)
+    if(modal.type==="burger_type"){
+      const opts=[
+        {id:"single",label:"단 품",        desc:item.name+" 단품",            price:item.basePrice,          icon:"🍔"},
+        {id:"set",   label:"세 트",         desc:"버거 + 감자(M) + 음료(M)",   price:item.basePrice+item.setAdd,   icon:"🍔🍟🥤"},
+        {id:"large", label:"라 지 세 트",   desc:"버거 + 감자(L) + 음료(L)",   price:item.basePrice+item.largeAdd,  icon:"🍔🍟🥤"},
+      ];
+      return(
+        <div onClick={e=>{if(e.target===e.currentTarget)setModal(null);}}
+          style={{position:"absolute",inset:0,background:"rgba(15,23,42,0.55)",zIndex:60,display:"flex",alignItems:"flex-end"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",padding:"20px 18px 30px"}}>
+            <div style={{width:36,height:4,background:"#e2e8f0",borderRadius:2,margin:"0 auto 16px"}}/>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
+              <div style={{width:56,height:56,borderRadius:10,overflow:"hidden",background:"#f0f4f8",flexShrink:0}}>
+                <FoodImg imgKey={item.img} alt={item.name} h={56}/>
+              </div>
+              <div>
+                <div style={{fontWeight:800,fontSize:16,color:"#1e293b"}}>{item.name}</div>
+                <div style={{fontSize:11,color:"#94a3b8"}}>주문 방식을 선택해주세요</div>
+              </div>
             </div>
-            <div>
-              <div style={{fontWeight:800,fontSize:15,color:"#1e293b"}}>{sizeModal.name}</div>
-              <div style={{fontSize:11,color:"#94a3b8"}}>사이즈를 선택해주세요</div>
+            <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
+              {opts.map((o,i)=>(
+                <button key={o.id}
+                  onClick={()=>{
+                    if(item.hasToppings){
+                      setSelectedItem({...item,_subType:o.id});
+                      setTops(initT(item.id));setActiveGroup("veg");
+                      setModal(null);setStep(1.5);
+                    } else {
+                      addToCart(item,{},null,o.id);setModal(null);
+                    }
+                  }}
+                  style={{display:"flex",alignItems:"center",gap:14,padding:"13px 16px",background:i===1?"#2563eb":"#f8faff",color:i===1?"#fff":"#1e293b",border:"2px solid "+(i===1?"#2563eb":"#e2e8f0"),borderRadius:12,cursor:"pointer"}}>
+                  <span style={{fontSize:20}}>{o.icon}</span>
+                  <div style={{flex:1,textAlign:"left"}}>
+                    <div style={{fontWeight:700,fontSize:14}}>{o.label}</div>
+                    <div style={{fontSize:10,color:i===1?"rgba(255,255,255,0.75)":"#94a3b8",marginTop:1}}>{o.desc}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontWeight:800,fontSize:15}}>{o.price.toLocaleString()}원</div>
+                    {i===1&&<div style={{fontSize:9,background:"rgba(255,255,255,0.2)",padding:"1px 5px",borderRadius:6,color:"#fff",marginTop:2,display:"inline-block"}}>추천</div>}
+                  </div>
+                </button>
+              ))}
             </div>
+            <button onClick={()=>setModal(null)} style={{width:"100%",padding:11,background:"#f1f5f9",border:"none",borderRadius:10,fontWeight:700,fontSize:14,color:"#64748b"}}>취소</button>
           </div>
-          <div style={{display:"flex",gap:9,marginBottom:14}}>
-            {["S","M","L"].map(sz=>(
-              <button key={sz} onClick={()=>{addToCart(sizeModal,{},sz,null);setSizeModal(null);}}
-                style={{flex:1,padding:"14px 0",background:sz==="M"?"#2563eb":"#f8faff",color:sz==="M"?"#fff":"#1e293b",border:"2px solid "+(sz==="M"?"#2563eb":"#e2e8f0"),borderRadius:12,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <span style={{fontWeight:800,fontSize:18}}>{sz}</span>
-                <span style={{fontSize:12,color:sz==="M"?"rgba(255,255,255,0.85)":"#64748b"}}>{sp[sz].toLocaleString()}원</span>
-                {sz==="M"&&<span style={{fontSize:9,background:"rgba(255,255,255,0.2)",padding:"1px 6px",borderRadius:8,color:"#fff",fontWeight:700}}>추천</span>}
-              </button>
-            ))}
+        </div>
+      );
+    }
+    // 사이즈 선택
+    if(modal.type==="size"){
+      const sp=SP[item.hasSize]||SP.drink;
+      return(
+        <div onClick={e=>{if(e.target===e.currentTarget)setModal(null);}}
+          style={{position:"absolute",inset:0,background:"rgba(15,23,42,0.55)",zIndex:60,display:"flex",alignItems:"flex-end"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",padding:"20px 18px 30px"}}>
+            <div style={{width:36,height:4,background:"#e2e8f0",borderRadius:2,margin:"0 auto 16px"}}/>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
+              <div style={{width:56,height:56,borderRadius:10,overflow:"hidden",background:"#f0f4f8",flexShrink:0}}>
+                <FoodImg imgKey={item.img} alt={item.name} h={56}/>
+              </div>
+              <div>
+                <div style={{fontWeight:800,fontSize:16,color:"#1e293b"}}>{item.name}</div>
+                <div style={{fontSize:11,color:"#94a3b8"}}>사이즈를 선택해주세요</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:9,marginBottom:14}}>
+              {["S","M","L"].map(sz=>(
+                <button key={sz} onClick={()=>{addToCart(item,{},sz,null);setModal(null);}}
+                  style={{flex:1,padding:"14px 0",background:sz==="M"?"#2563eb":"#f8faff",color:sz==="M"?"#fff":"#1e293b",border:"2px solid "+(sz==="M"?"#2563eb":"#e2e8f0"),borderRadius:12,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                  <span style={{fontWeight:800,fontSize:18}}>{sz}</span>
+                  <span style={{fontSize:12,color:sz==="M"?"rgba(255,255,255,0.85)":"#64748b"}}>{sp[sz].toLocaleString()}원</span>
+                  {sz==="M"&&<span style={{fontSize:9,background:"rgba(255,255,255,0.2)",padding:"1px 5px",borderRadius:8,color:"#fff",fontWeight:700}}>추천</span>}
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>setModal(null)} style={{width:"100%",padding:11,background:"#f1f5f9",border:"none",borderRadius:10,fontWeight:700,fontSize:14,color:"#64748b"}}>취소</button>
           </div>
-          <button onClick={()=>setSizeModal(null)} style={{width:"100%",padding:11,background:"#f1f5f9",border:"none",borderRadius:10,fontWeight:700,fontSize:14,color:"#64748b"}}>취소</button>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // ── 취소 확인 팝업 ────────────────────────────────────────────
+  const CancelConfirmModal=()=>{
+    if(!cancelConfirm)return null;
+    return(
+      <div style={{position:"absolute",inset:0,background:"rgba(15,23,42,0.55)",zIndex:70,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+        <div style={{background:"#fff",borderRadius:18,padding:"28px 24px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
+          <div style={{fontSize:44,marginBottom:12}}>⚠️</div>
+          <div style={{fontWeight:800,fontSize:17,color:"#1e293b",marginBottom:8}}>주문을 취소하시겠습니까?</div>
+          <div style={{fontSize:13,color:"#64748b",marginBottom:22,lineHeight:1.5}}>장바구니에 담긴 메뉴가 모두 삭제되고<br/>처음 화면으로 돌아갑니다.</div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setCancelConfirm(false)}
+              style={{flex:1,padding:"12px 0",background:"#f1f5f9",border:"none",borderRadius:10,fontWeight:700,fontSize:14,color:"#64748b"}}>계속 주문</button>
+            <button onClick={()=>{setCancelConfirm(false);setCart([]);setStep(0);setPayMethod(null);}}
+              style={{flex:1,padding:"12px 0",background:"#dc2626",border:"none",borderRadius:10,fontWeight:700,fontSize:14,color:"#fff"}}>주문 취소</button>
+          </div>
         </div>
       </div>
     );
   };
 
-  // 메뉴 카드
-  const MenuCard = ({item}) => {
-    const inCart = cart.filter(c=>c.id===item.id).reduce((s,c)=>s+c.qty,0);
-    const isBurger = activeCat==="burger" || (activeCat==="recommend"&&item.cat==="burger");
-    const dispPrice = isBurger ? getBurgerPrice(item) : (item.hasSize ? SIZE_PRICES[item.hasSize]?.S : item.price);
-
-    const handleClick = () => {
-      setSelectedItem(item);
-      if(item.hasToppings) {
-        setToppings(initToppings(item.id));
-        setActiveGroup("veg");
-        setStep(1.5);
-      } else if(item.hasSize) {
-        setSizeModal(item);
-      } else {
-        addToCart(item,{},null,isBurger?burgerSubType:null);
-      }
-    };
-
-    return (
-      <div onClick={handleClick}
-        style={{background:"#fff",border:inCart?"2px solid #2563eb":"2px solid #eef0f5",borderRadius:13,overflow:"hidden",cursor:"pointer",position:"relative",boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
-        {item.tag&&<span style={{position:"absolute",top:7,left:7,background:item.tag==="인기"?"#2563eb":item.tag==="신메뉴"?"#f59e0b":"#94a3b8",color:"#fff",fontSize:9,padding:"2px 6px",borderRadius:20,fontWeight:700,zIndex:1}}>{item.tag}</span>}
-        {inCart>0&&<span style={{position:"absolute",top:7,right:7,background:"#2563eb",color:"#fff",fontSize:9,width:19,height:19,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,zIndex:1}}>{inCart}</span>}
-        <div style={{height:100,background:"#f0f5ff",display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <MenuIllustration type={item.illus} size={86}/>
-        </div>
-        <div style={{padding:"8px 9px 10px"}}>
-          <div style={{fontWeight:700,fontSize:12,color:"#1e293b",marginBottom:2,lineHeight:1.3}}>{item.name}</div>
-          <div style={{fontSize:9,color:"#94a3b8",marginBottom:5,lineHeight:1.3}}>{item.desc}</div>
-          <div style={{fontWeight:800,fontSize:14,color:"#2563eb"}}>
-            {item.hasSize?(SIZE_PRICES[item.hasSize]?.S||item.price).toLocaleString()+"원~":dispPrice.toLocaleString()+"원"}
-          </div>
-          {item.hasToppings&&<div style={{fontSize:9,color:"#94a3b8",marginTop:1}}>재료 변경 가능</div>}
-          {item.hasSize&&<div style={{fontSize:9,color:"#2563eb",marginTop:1,fontWeight:600}}>S / M / L 선택</div>}
-        </div>
-      </div>
-    );
-  };
-
-  // ─── 하단 장바구니 패널 ────────────────────────────────────
-  const CartPanel = () => (
+  // ── 하단 장바구니 패널 ────────────────────────────────────────
+  const CartPanel=()=>(
     <div style={{background:"#fff",borderTop:"2px solid #2563eb",flexShrink:0}}>
-      {/* 헤더 */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:"#eff6ff",borderBottom:"1px solid #dbeafe"}}>
-        <span style={{fontWeight:800,fontSize:13,color:"#1d4ed8"}}>🛒 주문 내역</span>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:12,color:"#1d4ed8",fontWeight:700}}>총 {totalQty}개</span>
-          {cart.length>0&&<button onClick={()=>setCart([])} style={{background:"none",border:"none",fontSize:10,color:"#94a3b8",cursor:"pointer"}}>전체 삭제</button>}
-        </div>
-      </div>
-      {/* 아이템 목록 */}
-      <div ref={cartRef} style={{maxHeight:150,overflowY:"auto"}}>
-        {cart.length===0 ? (
-          <div style={{padding:"10px 14px",textAlign:"center",color:"#cbd5e1",fontSize:12}}>메뉴를 선택하면 여기에 담깁니다</div>
-        ) : (
-          cart.map(item=>(
-            <div key={item.cartKey} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 14px",borderBottom:"1px solid #f1f5f9"}}>
-              <div style={{width:36,height:36,background:"#f0f5ff",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <MenuIllustration type={item.illus} size={34}/>
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:600,fontSize:11,color:"#1e293b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {item.displayName||item.name}
-                  {item.selectedSize&&<span style={{marginLeft:3,fontSize:9,background:"#eff6ff",color:"#2563eb",padding:"1px 4px",borderRadius:4}}>{item.selectedSize}</span>}
-                </div>
-                {item.toppingSummary&&item.toppingSummary!=="기본 구성"&&<div style={{fontSize:9,color:"#94a3b8"}}>{item.toppingSummary}</div>}
-                <div style={{fontSize:11,color:"#2563eb",fontWeight:700}}>{itemUnitPrice(item).toLocaleString()}원</div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-                <button onClick={()=>removeOne(item.cartKey)} style={{width:24,height:24,borderRadius:"50%",border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
-                <span style={{fontWeight:700,fontSize:13,minWidth:16,textAlign:"center"}}>{item.qty}</span>
-                <button onClick={()=>addOne(item.cartKey)} style={{width:24,height:24,borderRadius:"50%",border:"none",background:"#2563eb",color:"#fff",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
-              </div>
-              <div style={{fontWeight:700,fontSize:12,color:"#1e293b",minWidth:50,textAlign:"right"}}>{itemTotal(item).toLocaleString()}원</div>
-            </div>
-          ))
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 14px",background:"#eff6ff",borderBottom:"1px solid #dbeafe"}}>
+        <span style={{fontWeight:800,fontSize:13,color:"#1d4ed8"}}>🛒 주문 내역 <span style={{fontSize:11,fontWeight:600,color:"#3b82f6"}}>({totalQty}개)</span></span>
+        {cart.length>0&&(
+          <button onClick={()=>setCancelConfirm(true)}
+            style={{background:"none",border:"none",fontSize:10,color:"#94a3b8",cursor:"pointer",padding:"2px 6px"}}>전체 삭제</button>
         )}
       </div>
-      {/* 합계 + 결제 버튼 */}
+      <div style={{maxHeight:148,overflowY:"auto"}}>
+        {cart.length===0?(
+          <div style={{padding:"10px 14px",textAlign:"center",color:"#cbd5e1",fontSize:12}}>메뉴를 선택하면 여기에 담깁니다</div>
+        ):cart.map(item=>(
+          <div key={item.cartKey} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderBottom:"1px solid #f1f5f9"}}>
+            <div style={{width:36,height:36,borderRadius:8,overflow:"hidden",background:"#f0f5ff",flexShrink:0}}>
+              <FoodImg imgKey={item.img} alt={item.name} h={36}/>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:600,fontSize:11,color:"#1e293b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {item.displayName}
+                {item.selectedSize&&<span style={{marginLeft:3,fontSize:9,background:"#eff6ff",color:"#2563eb",padding:"1px 4px",borderRadius:4}}>{item.selectedSize}</span>}
+              </div>
+              {item.toppingSummary&&item.toppingSummary!=="기본 구성"&&<div style={{fontSize:9,color:"#94a3b8"}}>{item.toppingSummary}</div>}
+              <div style={{fontSize:11,color:"#2563eb",fontWeight:700}}>{unitPrice(item).toLocaleString()}원</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+              <button onClick={()=>removeOne(item.cartKey)} style={{width:24,height:24,borderRadius:"50%",border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+              <span style={{fontWeight:700,fontSize:13,minWidth:16,textAlign:"center"}}>{item.qty}</span>
+              <button onClick={()=>addOne(item.cartKey)} style={{width:24,height:24,borderRadius:"50%",border:"none",background:"#2563eb",color:"#fff",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+            </div>
+            <div style={{fontWeight:700,fontSize:12,color:"#1e293b",minWidth:50,textAlign:"right"}}>{rowTotal(item).toLocaleString()}원</div>
+          </div>
+        ))}
+      </div>
       {cart.length>0&&(
-        <div style={{padding:"9px 14px 10px",display:"flex",alignItems:"center",gap:10,background:"#fff"}}>
+        <div style={{padding:"8px 14px 10px",display:"flex",alignItems:"center",gap:10}}>
           <div style={{flex:1}}>
             <span style={{fontSize:11,color:"#64748b"}}>총 합계 </span>
-            <span style={{fontSize:17,fontWeight:900,color:"#2563eb"}}>{totalPrice.toLocaleString()}원</span>
+            <span style={{fontSize:17,fontWeight:900,color:"#2563eb"}}>{grandTotal.toLocaleString()}원</span>
           </div>
           <button onClick={()=>setStep(4)}
-            style={{padding:"10px 20px",background:"#2563eb",color:"#fff",border:"none",borderRadius:10,fontWeight:800,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>
+            style={{padding:"10px 18px",background:"#2563eb",color:"#fff",border:"none",borderRadius:10,fontWeight:800,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>
             결제하기 →
           </button>
         </div>
@@ -687,18 +403,18 @@ const FastFoodKiosk = ({ onBack, theme }) => {
     </div>
   );
 
-  // ─── 하단 바 ────────────────────────────────────────────────
-  const BottomBar = ({showPrev, onPrev}) => (
+  // ── 하단 네비 바 ─────────────────────────────────────────────
+  const NavBar=({onPrev})=>(
     <div style={{display:"flex",alignItems:"stretch",borderTop:"1px solid #e8eaf0",background:"#fff",flexShrink:0}}>
       {[
-        {label:"처음으로",icon:"🏠",action:()=>{setStep(0);setSizeModal(null);}},
-        {label:"이전 화면",icon:"←",action:onPrev||null},
+        {label:"처음으로",icon:"🏠",action:()=>{ if(cart.length>0){setCancelConfirm(true);}else{setStep(0);} }},
+        {label:"이전 화면",icon:"←", action:onPrev||null},
         {label:"쿠폰 사용",icon:"🎫",action:null,hi:true},
-        {label:"장바구니",icon:"🛒",action:()=>totalQty>0&&setStep(3),badge:totalQty||null},
+        {label:"장바구니",icon:"🛒", action:()=>totalQty>0&&setStep(3),badge:totalQty||null},
       ].map((b,i)=>(
         <button key={i} onClick={b.action||undefined}
-          style={{flex:1,padding:"9px 2px 7px",background:b.hi?"#f0f4ff":"#fff",border:"none",cursor:b.action?"pointer":"default",display:"flex",flexDirection:"column",alignItems:"center",gap:2,fontSize:10,color:b.hi?"#2563eb":"#555",fontWeight:b.hi?700:500,position:"relative",opacity:(!b.action&&!b.hi)?0.35:1,minWidth:0}}>
-          <span style={{fontSize:16}}>{b.icon}</span>
+          style={{flex:1,padding:"9px 2px 7px",background:b.hi?"#eff6ff":"#fff",border:"none",cursor:b.action?"pointer":"default",display:"flex",flexDirection:"column",alignItems:"center",gap:2,color:b.hi?"#2563eb":"#555",fontWeight:b.hi?700:500,position:"relative",opacity:(!b.action&&!b.hi)?0.35:1,minWidth:0}}>
+          <span style={{fontSize:17}}>{b.icon}</span>
           <span style={{fontSize:10}}>{b.label}</span>
           {b.badge>0&&<span style={{position:"absolute",top:4,right:"10%",background:"#2563eb",color:"#fff",borderRadius:"50%",width:15,height:15,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{b.badge}</span>}
         </button>
@@ -706,13 +422,44 @@ const FastFoodKiosk = ({ onBack, theme }) => {
     </div>
   );
 
-  // ─── 0단계: 홈 ──────────────────────────────────────────────
-  if(step===0) return (
+  // ── 메뉴 카드 ────────────────────────────────────────────────
+  const Card=({item})=>{
+    const inCart=cart.filter(c=>c.id===item.id).reduce((s,c)=>s+c.qty,0);
+    const isBurger=activeCat==="burger"||(activeCat==="recommend"&&item._cat==="burger");
+    const showPrice=item.hasSize?`${SP[item.hasSize]?.S?.toLocaleString()}원~`:
+                    isBurger?`${item.basePrice.toLocaleString()}원`:
+                    `${item.price.toLocaleString()}원`;
+    return(
+      <div onClick={()=>handleCardClick(item)}
+        style={{background:"#fff",border:inCart?"2px solid #2563eb":"2px solid #eef0f5",borderRadius:13,overflow:"hidden",cursor:"pointer",position:"relative",boxShadow:"0 1px 4px rgba(0,0,0,0.05)",display:"flex",flexDirection:"column"}}>
+        {item.tag&&<span style={{position:"absolute",top:7,left:7,background:item.tag==="인기"?"#2563eb":item.tag==="신메뉴"?"#f59e0b":"#94a3b8",color:"#fff",fontSize:9,padding:"2px 6px",borderRadius:20,fontWeight:700,zIndex:1}}>{item.tag}</span>}
+        {inCart>0&&<span style={{position:"absolute",top:7,right:7,background:"#2563eb",color:"#fff",fontSize:9,width:19,height:19,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,zIndex:1}}>{inCart}</span>}
+        <div style={{height:100,flexShrink:0}}>
+          <FoodImg imgKey={item.img} alt={item.name} h={100}/>
+        </div>
+        <div style={{padding:"8px 9px 10px",flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:12,color:"#1e293b",marginBottom:2,lineHeight:1.3}}>{item.name}</div>
+            <div style={{fontSize:9,color:"#94a3b8",lineHeight:1.3}}>{item.desc}</div>
+          </div>
+          <div style={{marginTop:5}}>
+            <div style={{fontWeight:800,fontSize:14,color:"#2563eb"}}>{showPrice}</div>
+            {item.hasToppings&&<div style={{fontSize:9,color:"#94a3b8",marginTop:1}}>재료 변경 가능</div>}
+            {item.hasSize&&<div style={{fontSize:9,color:"#2563eb",marginTop:1,fontWeight:600}}>S / M / L 선택</div>}
+            {isBurger&&!item.hasToppings&&<div style={{fontSize:9,color:"#94a3b8",marginTop:1}}>단품 / 세트 선택</div>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── 0단계: 홈 ────────────────────────────────────────────────
+  if(step===0)return(
     <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f0f5ff",position:"relative"}}>
       <div style={{background:"#2563eb",padding:"14px 18px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:40,height:40,background:"#fff",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <MenuIllustration type="bulgogi" size={36}/>
+          <div style={{width:40,height:40,background:"#fff",borderRadius:9,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <FoodImg imgKey="bulgogi" alt="logo" h={40}/>
           </div>
           <div>
             <div style={{color:"#fff",fontWeight:900,fontSize:14}}>SNUBH BURGER</div>
@@ -733,13 +480,12 @@ const FastFoodKiosk = ({ onBack, theme }) => {
               onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}
               onMouseDown={e=>e.currentTarget.style.transform="scale(0.96)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
               style={{flex:1,padding:"22px 10px",background:"#fff",border:"2px solid #e2e8f0",borderRadius:14,cursor:"pointer",fontWeight:700,color:"#2563eb",display:"flex",flexDirection:"column",alignItems:"center",gap:9,boxShadow:"0 2px 10px rgba(37,99,235,0.08)",fontSize:14}}>
-              <span style={{fontSize:32}}>{o.emoji}</span>
-              <span>{o.label}</span>
+              <span style={{fontSize:32}}>{o.emoji}</span><span>{o.label}</span>
             </button>
           ))}
         </div>
       </div>
-      <div style={{padding:"9px 18px 10px",background:"#fff",borderTop:"1px solid #eef0f5",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+      <div style={{padding:"9px 18px",background:"#fff",borderTop:"1px solid #eef0f5",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <span style={{fontSize:10,color:"#94a3b8"}}>ⓘ 알레르기 정보는 직원에게 문의해 주세요</span>
         <button onClick={onBack} style={{background:"none",border:"1px solid #e2e8f0",color:"#94a3b8",padding:"3px 8px",borderRadius:14,fontSize:9}}>← 뒤로</button>
       </div>
@@ -747,10 +493,9 @@ const FastFoodKiosk = ({ onBack, theme }) => {
     </div>
   );
 
-  // ─── 1단계: 메뉴 선택 ───────────────────────────────────────
-  if(step===1) return (
+  // ── 1단계: 메뉴 선택 ─────────────────────────────────────────
+  if(step===1)return(
     <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f8faff",position:"relative"}}>
-      {/* 상단 헤더 */}
       <div style={{background:"#fff",borderBottom:"1px solid #eef0f5",padding:"10px 14px",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
           <div style={{display:"flex",alignItems:"center",gap:7}}>
@@ -767,25 +512,11 @@ const FastFoodKiosk = ({ onBack, theme }) => {
         <div style={{fontSize:12,color:"#1e293b",fontWeight:700}}>메뉴를 선택해주세요</div>
         <div style={{fontSize:10,color:"#94a3b8"}}>원하는 메뉴를 터치하여 선택해 주세요.</div>
       </div>
-
-      {/* 버거 단품/세트/라지세트 탭 (버거 카테고리일 때만) */}
-      {activeCat==="burger"&&(
-        <div style={{display:"flex",background:"#fff",borderBottom:"1px solid #eef0f5",padding:"8px 12px",gap:8,flexShrink:0}}>
-          {[{id:"single",label:"단품"},{id:"set",label:"세트 +2,000원"},{id:"largeset",label:"라지세트 +2,500원"}].map(sub=>(
-            <button key={sub.id} onClick={()=>setBurgerSubType(sub.id)}
-              style={{flex:1,padding:"7px 4px",background:burgerSubType===sub.id?"#2563eb":"#f1f5f9",color:burgerSubType===sub.id?"#fff":"#64748b",border:"none",borderRadius:8,fontWeight:700,fontSize:10,cursor:"pointer"}}>
-              {sub.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* 본문 */}
       <div style={{flex:1,overflow:"hidden",display:"flex",minHeight:0}}>
         {/* 사이드바 */}
         <div style={{width:64,background:"#fff",borderRight:"1px solid #eef0f5",display:"flex",flexDirection:"column",overflowY:"auto",flexShrink:0}}>
-          {categories.map(cat=>(
-            <button key={cat.id} onClick={()=>{setActiveCat(cat.id);if(cat.id!=="burger")setBurgerSubType("single");}}
+          {CATS.map(cat=>(
+            <button key={cat.id} onClick={()=>setActiveCat(cat.id)}
               style={{padding:"11px 2px",background:activeCat===cat.id?"#eff6ff":"transparent",borderLeft:activeCat===cat.id?"3px solid #2563eb":"3px solid transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,flexShrink:0}}>
               <span style={{fontSize:18}}>{cat.emoji}</span>
               <span style={{fontSize:8,fontWeight:activeCat===cat.id?800:500,color:activeCat===cat.id?"#2563eb":"#64748b",lineHeight:1.2,textAlign:"center"}}>{cat.label}</span>
@@ -794,49 +525,53 @@ const FastFoodKiosk = ({ onBack, theme }) => {
         </div>
         {/* 메뉴 그리드 */}
         <div style={{flex:1,overflowY:"auto",padding:"8px 7px 8px 8px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,alignContent:"start"}}>
-          {getMenuItems().map(item=><MenuCard key={item.id+"-"+activeCat} item={item}/>)}
+          {getMenu().map(item=><Card key={item.id+"-"+activeCat} item={item}/>)}
         </div>
       </div>
-
-      {/* 하단 장바구니 패널 */}
       <CartPanel/>
-      <BottomBar onPrev={()=>setStep(0)}/>
+      <NavBar onPrev={()=>{if(cart.length>0){setCancelConfirm(true);}else{setStep(0);}}}/>
       <VTag/>
-      <SizeModal/>
+      <Modal/>
+      <CancelConfirmModal/>
     </div>
   );
 
-  // ─── 1.5단계: 토핑 커스터마이징 ────────────────────────────
-  if(step===1.5&&selectedItem) {
-    const toppingExtra = calcToppingExtra(toppings);
-    const finalPrice = (activeCat==="burger"?getBurgerPrice(selectedItem):selectedItem.basePrice||selectedItem.price) + toppingExtra;
-    const currentGroup = TOPPING_GROUPS.find(g=>g.groupId===activeGroup);
-    const defaults = MENU_DEFAULT_TOPPINGS[selectedItem.id]||{};
-    const changedCount = Object.keys(toppings).filter(k=>!!toppings[k]!==!!defaults[k]).length;
-    return (
+  // ── 1.5단계: 토핑 ────────────────────────────────────────────
+  if(step===1.5&&selectedItem){
+    const te=calcTE(tops);
+    const baseP=(selectedItem._subType==="set"?(selectedItem.basePrice+selectedItem.setAdd):
+                 selectedItem._subType==="large"?(selectedItem.basePrice+selectedItem.largeAdd):
+                 (selectedItem.basePrice||selectedItem.price));
+    const finalP=baseP+te;
+    const cg=TOPPING_GROUPS.find(g=>g.groupId===activeGroup);
+    const defs=MDT[selectedItem.id]||{};
+    const changed=Object.keys(tops).filter(k=>!!tops[k]!==!!defs[k]).length;
+    return(
       <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f8faff"}}>
         <div style={{background:"#2563eb",padding:"9px 13px",display:"flex",alignItems:"center",gap:9,flexShrink:0}}>
           <button onClick={()=>setStep(1)} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:14,fontWeight:700}}>←</button>
           <div style={{flex:1}}>
             <div style={{color:"#fff",fontWeight:800,fontSize:13}}>{selectedItem.name} — 재료변경</div>
-            <div style={{color:"rgba(255,255,255,0.72)",fontSize:10}}>{changedCount>0?(changedCount+"가지 변경됨"):"기본 구성"}</div>
+            <div style={{color:"rgba(255,255,255,0.72)",fontSize:10}}>{changed>0?(changed+"가지 변경됨"):"기본 구성"}</div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{color:"#fff",fontWeight:900,fontSize:15}}>{finalPrice.toLocaleString()}원</div>
-            {toppingExtra>0&&<div style={{color:"#fde68a",fontSize:9,fontWeight:700}}>+{toppingExtra.toLocaleString()}원</div>}
+            <div style={{color:"#fff",fontWeight:900,fontSize:15}}>{finalP.toLocaleString()}원</div>
+            {te>0&&<div style={{color:"#fde68a",fontSize:9,fontWeight:700}}>+{te.toLocaleString()}원</div>}
           </div>
         </div>
         {/* 버거 미리보기 */}
         <div style={{background:"#fff",padding:"9px 13px 7px",borderBottom:"1px solid #eef0f5",display:"flex",alignItems:"center",gap:11,flexShrink:0}}>
-          <MenuIllustration type={selectedItem.illus} size={70}/>
+          <div style={{width:72,height:60,borderRadius:9,overflow:"hidden",background:"#f0f4f8",flexShrink:0}}>
+            <FoodImg imgKey={selectedItem.img} alt={selectedItem.name} h={60}/>
+          </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:9,color:"#94a3b8",marginBottom:3}}>현재 구성</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-              {TOPPING_GROUPS.flatMap(g=>g.items).filter(it=>toppings[it.id]).map(it=>{
-                const isNew=!defaults[it.id];
-                return <span key={it.id} style={{fontSize:9,padding:"2px 5px",borderRadius:8,fontWeight:700,background:isNew?"#2563eb":"#f1f5f9",color:isNew?"#fff":"#64748b"}}>{isNew&&"+"}{it.name}</span>;
+              {TOPPING_GROUPS.flatMap(g=>g.items).filter(it=>tops[it.id]).map(it=>{
+                const isNew=!defs[it.id];
+                return<span key={it.id} style={{fontSize:9,padding:"2px 5px",borderRadius:8,fontWeight:700,background:isNew?"#2563eb":"#f1f5f9",color:isNew?"#fff":"#64748b"}}>{isNew&&"+"}{it.name}</span>;
               })}
-              {TOPPING_GROUPS.flatMap(g=>g.items).filter(it=>!toppings[it.id]&&defaults[it.id]).map(it=>(
+              {TOPPING_GROUPS.flatMap(g=>g.items).filter(it=>!tops[it.id]&&defs[it.id]).map(it=>(
                 <span key={it.id} style={{fontSize:9,padding:"2px 5px",borderRadius:8,fontWeight:700,background:"#fff0f0",color:"#dc2626",textDecoration:"line-through"}}>{it.name}</span>
               ))}
             </div>
@@ -845,8 +580,8 @@ const FastFoodKiosk = ({ onBack, theme }) => {
         {/* 탭 */}
         <div style={{display:"flex",background:"#fff",borderBottom:"2px solid #eef0f5",flexShrink:0}}>
           {TOPPING_GROUPS.map(g=>{
-            const cnt=g.items.filter(it=>toppings[it.id]).length;
-            return (
+            const cnt=g.items.filter(it=>tops[it.id]).length;
+            return(
               <button key={g.groupId} onClick={()=>setActiveGroup(g.groupId)}
                 style={{flex:1,padding:"7px 3px",background:"none",border:"none",borderBottom:activeGroup===g.groupId?"3px solid #2563eb":"3px solid transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1,position:"relative"}}>
                 {cnt>0&&<span style={{position:"absolute",top:2,right:"12%",background:"#2563eb",color:"#fff",borderRadius:"50%",width:12,height:12,fontSize:8,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{cnt}</span>}
@@ -856,21 +591,19 @@ const FastFoodKiosk = ({ onBack, theme }) => {
             );
           })}
         </div>
-        {/* 토핑 그리드 */}
         <div style={{flex:1,overflow:"auto",padding:8}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-            {currentGroup&&currentGroup.items.map(item=>{
-              const isOn=!!toppings[item.id];
-              const wasDefault=!!defaults[item.id];
-              const isNew=isOn&&!wasDefault;
-              const isRemoved=!isOn&&wasDefault;
-              return (
-                <button key={item.id} onClick={()=>setToppings(prev=>({...prev,[item.id]:!prev[item.id]}))}
-                  style={{background:isOn?(isNew?"#eff6ff":"#f0fdf4"):(isRemoved?"#fff5f5":"#fff"),border:"2px solid "+(isOn?(isNew?"#2563eb":"#22c55e"):(isRemoved?"#fca5a5":"#e2e8f0")),borderRadius:11,padding:"10px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",transition:"all 0.1s"}}>
+            {cg&&cg.items.map(item=>{
+              const isOn=!!tops[item.id];
+              const wasD=!!defs[item.id];
+              const isNew=isOn&&!wasD,isRm=!isOn&&wasD;
+              return(
+                <button key={item.id} onClick={()=>setTops(prev=>({...prev,[item.id]:!prev[item.id]}))}
+                  style={{background:isOn?(isNew?"#eff6ff":"#f0fdf4"):(isRm?"#fff5f5":"#fff"),border:"2px solid "+(isOn?(isNew?"#2563eb":"#22c55e"):(isRm?"#fca5a5":"#e2e8f0")),borderRadius:11,padding:"10px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative"}}>
                   {isNew&&<span style={{position:"absolute",top:3,right:3,background:"#2563eb",color:"#fff",fontSize:7,padding:"1px 3px",borderRadius:3,fontWeight:800}}>추가</span>}
-                  {isRemoved&&<span style={{position:"absolute",top:3,right:3,background:"#dc2626",color:"#fff",fontSize:7,padding:"1px 3px",borderRadius:3,fontWeight:800}}>제외</span>}
+                  {isRm&&<span style={{position:"absolute",top:3,right:3,background:"#dc2626",color:"#fff",fontSize:7,padding:"1px 3px",borderRadius:3,fontWeight:800}}>제외</span>}
                   <div style={{position:"absolute",top:3,left:3,width:15,height:15,borderRadius:"50%",background:isOn?(isNew?"#2563eb":"#22c55e"):"#e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:900}}>{isOn?"✓":""}</div>
-                  <span style={{fontSize:23,marginTop:2}}>{item.emoji}</span>
+                  <span style={{fontSize:22,marginTop:2}}>{item.emoji}</span>
                   <div style={{fontWeight:700,fontSize:11,color:isOn?"#1e293b":"#94a3b8",textAlign:"center"}}>{item.name}</div>
                   <div style={{fontSize:9,color:"#cbd5e1"}}>{item.kcal}kcal</div>
                   {item.price>0
@@ -884,9 +617,9 @@ const FastFoodKiosk = ({ onBack, theme }) => {
         </div>
         <div style={{background:"#fff",borderTop:"1px solid #eef0f5",padding:"9px 11px",flexShrink:0}}>
           <div style={{display:"flex",gap:7}}>
-            <button onClick={()=>setToppings(initToppings(selectedItem.id))} style={{flex:1,padding:"10px 0",background:"#f1f5f9",border:"none",color:"#64748b",borderRadius:9,fontWeight:700,cursor:"pointer",fontSize:11}}>🔄 기본으로</button>
-            <button onClick={()=>{addToCart(selectedItem,toppings,null,activeCat==="burger"?burgerSubType:null);setStep(1);}}
-              style={{flex:2.5,padding:"10px 0",background:"#2563eb",color:"#fff",border:"none",borderRadius:9,fontWeight:800,cursor:"pointer",fontSize:13}}>담기 · {finalPrice.toLocaleString()}원 →</button>
+            <button onClick={()=>setTops(initT(selectedItem.id))} style={{flex:1,padding:"10px 0",background:"#f1f5f9",border:"none",color:"#64748b",borderRadius:9,fontWeight:700,cursor:"pointer",fontSize:11}}>🔄 기본으로</button>
+            <button onClick={()=>{addToCart(selectedItem,tops,null,selectedItem._subType||null);setStep(1);}}
+              style={{flex:2.5,padding:"10px 0",background:"#2563eb",color:"#fff",border:"none",borderRadius:9,fontWeight:800,cursor:"pointer",fontSize:13}}>담기 · {finalP.toLocaleString()}원 →</button>
           </div>
         </div>
         <VTag/>
@@ -894,9 +627,9 @@ const FastFoodKiosk = ({ onBack, theme }) => {
     );
   }
 
-  // ─── 4단계: 결제수단 ────────────────────────────────────────
-  if(step===4) return (
-    <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f8faff"}}>
+  // ── 4단계: 결제 ──────────────────────────────────────────────
+  if(step===4)return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f8faff",position:"relative"}}>
       <div style={{background:"#2563eb",padding:"11px 14px",display:"flex",alignItems:"center",gap:9,flexShrink:0}}>
         <button onClick={()=>setStep(1)} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:13,fontWeight:700}}>←</button>
         <span style={{color:"#fff",fontWeight:800,fontSize:14}}>결제수단을 선택해주세요</span>
@@ -904,25 +637,25 @@ const FastFoodKiosk = ({ onBack, theme }) => {
       {/* 주문 요약 */}
       <div style={{background:"#eff6ff",padding:"10px 14px",borderBottom:"1px solid #dbeafe",flexShrink:0}}>
         <div style={{fontSize:12,color:"#1d4ed8",fontWeight:700,marginBottom:4}}>주문 내역 확인</div>
-        <div style={{maxHeight:90,overflowY:"auto"}}>
+        <div style={{maxHeight:88,overflowY:"auto"}}>
           {cart.map(item=>(
             <div key={item.cartKey} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#334155",marginBottom:2}}>
-              <span>{item.displayName||item.name}{item.selectedSize&&" ("+item.selectedSize+")"} ×{item.qty}</span>
-              <span>{itemTotal(item).toLocaleString()}원</span>
+              <span>{item.displayName}{item.selectedSize&&" ("+item.selectedSize+")"} ×{item.qty}</span>
+              <span>{rowTotal(item).toLocaleString()}원</span>
             </div>
           ))}
         </div>
         <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:15,color:"#2563eb",paddingTop:6,borderTop:"1px solid #bfdbfe",marginTop:4}}>
-          <span>총 결제금액</span><span>{totalPrice.toLocaleString()}원</span>
+          <span>총 결제금액</span><span>{grandTotal.toLocaleString()}원</span>
         </div>
       </div>
       <div style={{flex:1,padding:13,display:"flex",flexDirection:"column",gap:9,overflowY:"auto"}}>
         {[
-          {id:"card",label:"신용카드 / 체크카드",emoji:"💳",sub:"IC칩 · 마그네틱 · 비접촉"},
-          {id:"kakao",label:"카카오페이",emoji:"💛",sub:"카카오페이 앱 실행 후 QR"},
-          {id:"payco",label:"페이코",emoji:"🔴",sub:"PAYCO 앱 실행 후 바코드"},
-          {id:"naver",label:"네이버페이",emoji:"💚",sub:"네이버페이 QR코드"},
-          {id:"cash",label:"현금",emoji:"💵",sub:"카운터에서 수납"},
+          {id:"card", label:"신용카드 / 체크카드",       emoji:"💳",sub:"IC칩 · 마그네틱 · 비접촉"},
+          {id:"kakao",label:"카카오페이",                emoji:"💛",sub:"카카오페이 앱 QR코드"},
+          {id:"payco",label:"페이코",                    emoji:"🔴",sub:"PAYCO 앱 바코드"},
+          {id:"naver",label:"네이버페이",                emoji:"💚",sub:"네이버페이 QR코드"},
+          {id:"cash", label:"현금",                      emoji:"💵",sub:"카운터에서 수납"},
         ].map(m=>(
           <button key={m.id} onClick={()=>setPayMethod(m.id)}
             style={{background:payMethod===m.id?"#2563eb":"#fff",color:payMethod===m.id?"#fff":"#1e293b",border:"2px solid "+(payMethod===m.id?"#2563eb":"#e2e8f0"),borderRadius:11,padding:"12px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,transition:"all 0.12s"}}>
@@ -931,7 +664,7 @@ const FastFoodKiosk = ({ onBack, theme }) => {
               <div style={{fontWeight:700,fontSize:13}}>{m.label}</div>
               <div style={{fontSize:10,color:payMethod===m.id?"rgba(255,255,255,0.7)":"#94a3b8",marginTop:1}}>{m.sub}</div>
             </div>
-            {payMethod===m.id&&<span style={{fontSize:18,flexShrink:0}}>✓</span>}
+            {payMethod===m.id&&<span style={{fontSize:18}}>✓</span>}
           </button>
         ))}
       </div>
@@ -940,41 +673,43 @@ const FastFoodKiosk = ({ onBack, theme }) => {
         <button onClick={()=>payMethod&&setStep(5)} style={{flex:2,padding:12,background:payMethod?"#2563eb":"#94a3b8",color:"#fff",border:"none",borderRadius:9,fontWeight:800,cursor:payMethod?"pointer":"not-allowed",fontSize:14}}>결제 →</button>
       </div>
       <VTag/>
+      <CancelConfirmModal/>
     </div>
   );
 
-  // ─── 5단계: 완료 ────────────────────────────────────────────
-  return (
+  // ── 5단계: 완료 ──────────────────────────────────────────────
+  return(
     <div style={{height:"100%",display:"flex",flexDirection:"column",background:"#f8faff"}}>
       <div style={{background:"#2563eb",padding:"11px 14px",flexShrink:0}}>
         <span style={{color:"#fff",fontWeight:800,fontSize:14}}>주문 완료</span>
       </div>
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16,gap:12}}>
-        <div style={{fontSize:60}}>✅</div>
+        <div style={{fontSize:56}}>✅</div>
         <h2 style={{margin:0,fontSize:20,fontWeight:900,color:"#1e293b",textAlign:"center"}}>주문이 완료되었습니다!</h2>
-        <p style={{margin:0,fontSize:12,color:"#64748b",textAlign:"center"}}>주문 완료 후 번호표를 가져가세요</p>
+        <p style={{margin:0,fontSize:12,color:"#64748b",textAlign:"center"}}>번호표를 가져가세요</p>
         <div style={{background:"#fff",borderRadius:15,padding:18,width:"100%",border:"2px solid #eff6ff",textAlign:"center"}}>
           <div style={{fontSize:12,color:"#64748b",marginBottom:3}}>대기번호</div>
-          <div style={{fontSize:60,fontWeight:900,color:"#2563eb"}}>23</div>
-          <p style={{color:"#94a3b8",margin:"6px 0 0",fontSize:11}}>번호가 호출되면 카운터에서 수령해주세요</p>
+          <div style={{fontSize:60,fontWeight:900,color:"#2563eb",lineHeight:1}}>23</div>
+          <div style={{marginTop:10,padding:"8px 14px",background:"#eff6ff",borderRadius:10,display:"inline-block"}}>
+            <span style={{fontSize:12,color:"#1d4ed8",fontWeight:700}}>⏱ 예상 대기시간 약 </span>
+            <span style={{fontSize:16,color:"#2563eb",fontWeight:900}}>8분</span>
+          </div>
+          <p style={{color:"#94a3b8",margin:"10px 0 0",fontSize:11}}>번호가 호출되면 카운터에서 수령해주세요</p>
         </div>
         <div style={{background:"#fff",borderRadius:11,padding:13,width:"100%",border:"1px solid #eef0f5"}}>
           <div style={{fontWeight:700,marginBottom:7,color:"#1e293b",fontSize:12}}>주문 내역</div>
           {cart.map(item=>(
             <div key={item.cartKey} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748b",marginBottom:4}}>
-              <span>{item.displayName||item.name}{item.selectedSize&&" ("+item.selectedSize+")"} ×{item.qty}</span>
-              <span style={{fontWeight:600}}>{itemTotal(item).toLocaleString()}원</span>
+              <span>{item.displayName}{item.selectedSize&&" ("+item.selectedSize+")"} ×{item.qty}</span>
+              <span style={{fontWeight:600}}>{rowTotal(item).toLocaleString()}원</span>
             </div>
           ))}
-          <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,color:"#2563eb",paddingTop:7,borderTop:"1px solid #eef0f5",fontSize:13}}>
-            <span>합계</span><span>{totalPrice.toLocaleString()}원</span>
-          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,color:"#2563eb",paddingTop:7,borderTop:"1px solid #eef0f5",fontSize:13}}><span>합계</span><span>{grandTotal.toLocaleString()}원</span></div>
         </div>
-        {/* 영수증 선택 */}
         <div style={{background:"#fff",borderRadius:11,padding:"10px 13px",width:"100%",border:"1px solid #eef0f5"}}>
           <div style={{fontSize:11,color:"#64748b",marginBottom:7,textAlign:"center"}}>영수증을 선택해주세요</div>
           <div style={{display:"flex",gap:8}}>
-            {[{label:"영수증 출력",icon:"🖨️"},{label:"영수증 없이",icon:"✗"}].map(r=>(
+            {[{label:"영수증 출력",icon:"🖨️"},{label:"영수증 없이",icon:"✕"}].map(r=>(
               <button key={r.label} style={{flex:1,padding:"9px 0",background:"#f8faff",border:"1px solid #e2e8f0",borderRadius:9,fontWeight:600,fontSize:11,color:"#64748b",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
                 <span style={{fontSize:16}}>{r.icon}</span><span>{r.label}</span>
               </button>
@@ -988,7 +723,9 @@ const FastFoodKiosk = ({ onBack, theme }) => {
       <VTag/>
     </div>
   );
-};
+}
+
+
 // ─── 은행 키오스크 (신한은행 ATM 실제 플로우) ─────────────────
 // 0홈 → 1매체선택 → 3카드삽입 → 4불법카드복제안내
 // → 5보이스피싱확인1 → 5.5보이스피싱확인2 → 6비밀번호
@@ -1717,24 +1454,25 @@ const HospitalKiosk = ({ onBack, theme }) => {
 };
 
 
+
 // ─── 메인 앱 ─────────────────────────────────────────────────
-function KioskApp() {
-  const [selected, setSelected] = useState(null);
-  const kioskList = [
-    { id:"fastfood", Component:FastFoodKiosk },
-    { id:"bank",     Component:BankKiosk     },
-    { id:"pharmacy", Component:PharmacyKiosk },
-    { id:"hospital", Component:HospitalKiosk },
+function KioskApp(){
+  const [selected,setSelected]=useState(null);
+  const list=[
+    {id:"fastfood",Component:FastFoodKiosk},
+    {id:"bank",    Component:BankKiosk},
+    {id:"pharmacy",Component:PharmacyKiosk},
+    {id:"hospital",Component:HospitalKiosk},
   ];
-  if (selected) {
-    const item = kioskList.find(k=>k.id===selected);
-    const t = THEMES[selected];
-    return (
-      <div className="kiosk-root" style={{fontFamily:"'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif"}}>
+  if(selected){
+    const item=list.find(k=>k.id===selected);
+    const t=THEMES[selected];
+    return(
+      <div className="kw" style={{fontFamily:"'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif"}}>
         <div style={{background:"#1a1a2e",padding:"5px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <div style={{display:"flex",gap:4}}>{["#ff5f57","#febc2e","#28c840"].map((c,i)=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:c}}/>)}</div>
           <span style={{color:"#555",fontSize:9}}>키오스크 시뮬레이터 · {t.label} {t.emoji}</span>
-          <span style={{color:"#444",fontSize:9,fontWeight:600}}>v{APP_VER}</span>
+          <span style={{color:"#444",fontSize:9,fontWeight:600}}>v{VER}</span>
         </div>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",position:"relative",minHeight:0}}>
           <item.Component onBack={()=>setSelected(null)} theme={t}/>
@@ -1742,8 +1480,8 @@ function KioskApp() {
       </div>
     );
   }
-  return (
-    <div style={{width:"100%",minHeight:"100svh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:18}}>
+  return(
+    <div style={{width:"100%",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:18}}>
       <div style={{textAlign:"center",marginBottom:28}}>
         <div style={{width:66,height:66,background:"#fff",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)"}}>
           <span style={{fontSize:36}}>🖥️</span>
@@ -1766,14 +1504,14 @@ function KioskApp() {
       </div>
       <div style={{marginTop:24,textAlign:"center"}}>
         <p style={{color:"rgba(255,255,255,0.3)",fontSize:10,margin:0}}>인지재활 훈련용 키오스크 시뮬레이터</p>
-        <p style={{color:"rgba(255,255,255,0.22)",fontSize:10,margin:"3px 0 0"}}>v{APP_VER}</p>
+        <p style={{color:"rgba(255,255,255,0.22)",fontSize:10,margin:"3px 0 0"}}>v{VER}</p>
       </div>
     </div>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<KioskApp />);
+const root=ReactDOM.createRoot(document.getElementById("root"));
+root.render(<KioskApp/>);
   </script>
 </body>
 </html>
