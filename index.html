@@ -4,16 +4,17 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#e8100a"/>
-<title>SNUBH BURGER 키오스크</title>
+<title>SNUBH BURGER 키오스크 v3.1</title>
 <style>
 /* ── 리셋 & 기반 ──────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{
-  width:100%;height:100%;
+  width:100%;height:100vh;max-height:100vh;
   font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
   background:#f5f0e8;
   overscroll-behavior:none;
   -webkit-text-size-adjust:100%;
+  overflow:hidden;
 }
 button{font-family:inherit;cursor:pointer;-webkit-appearance:none;outline:none;border:none;background:none}
 img{display:block}
@@ -22,7 +23,8 @@ img{display:block}
 
 /* ── 앱 컨테이너 ─────────────────────────────────────────── */
 #app{
-  width:100%;max-width:480px;min-height:100vh;
+  width:100%;max-width:480px;
+  height:100vh;max-height:100vh;
   background:#fff;
   display:flex;flex-direction:column;
   margin:0 auto;
@@ -109,8 +111,8 @@ img{display:block}
 }
 .sheet{
   background:#fff;border-radius:22px 22px 0 0;
-  width:100%;padding:18px 16px 28px;
-  max-height:88vh;overflow-y:auto;
+  width:100%;padding:14px 16px 20px;
+  max-height:82vh;overflow-y:auto;
 }
 .sheet-handle{
   width:40px;height:4px;background:#e2e8f0;
@@ -191,9 +193,10 @@ img{display:block}
 
 /* 중앙 카드 그리드 */
 .card-grid{
-  flex:1;overflow-y:auto;padding:10px;
+  flex:1;overflow-y:auto;padding:8px;
   display:grid;grid-template-columns:1fr 1fr;
-  gap:10px;align-content:start;
+  grid-auto-rows:min-content;
+  gap:8px;align-content:start;
   scrollbar-width:none;
 }
 .card-grid::-webkit-scrollbar{display:none}
@@ -220,31 +223,34 @@ img{display:block}
   border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-weight:800;z-index:2;
 }
-.mcard-body{padding:9px 10px 4px}
-.mcard-name{font-size:14px;font-weight:800;color:#1a0000;line-height:1.3}
-.mcard-desc{font-size:10px;color:#94a3b8;margin-top:2px;line-height:1.3}
-.mcard-price{font-size:17px;font-weight:900;color:#e8100a;margin-top:5px}
+.mcard-body{padding:8px 10px 3px;min-width:0}
+.mcard-name{font-size:13px;font-weight:800;color:#1a0000;line-height:1.3;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
+.mcard-desc{font-size:10px;color:#94a3b8;margin-top:2px;line-height:1.3;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
+.mcard-price{font-size:15px;font-weight:900;color:#e8100a;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* 카드 하단 버튼 행 (버거: 단품/세트, 나머지: 담기) */
 .mcard-btns{
-  display:flex;gap:6px;padding:8px 8px 10px;
+  display:flex;gap:5px;padding:6px 8px 8px;flex-shrink:0;
 }
 .mcard-btn-outline{
-  flex:1;padding:9px 4px;border:2px solid #e8100a;border-radius:10px;
-  font-size:12px;font-weight:700;color:#e8100a;background:#fff;
-  transition:all 0.12s;
+  flex:1;padding:8px 2px;border:2px solid #e8100a;border-radius:10px;
+  font-size:11px;font-weight:700;color:#e8100a;background:#fff;
+  transition:all 0.12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .mcard-btn-outline:active{background:#fff5f5}
 .mcard-btn-fill{
-  flex:1;padding:9px 4px;border:none;border-radius:10px;
-  font-size:12px;font-weight:800;color:#fff;background:#e8100a;
-  transition:all 0.12s;
+  flex:1;padding:8px 2px;border:none;border-radius:10px;
+  font-size:11px;font-weight:800;color:#fff;background:#e8100a;
+  transition:all 0.12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .mcard-btn-fill:active{background:#c00800}
 .mcard-btn-single{
-  flex:1;padding:10px 4px;border:none;border-radius:10px;
-  font-size:13px;font-weight:800;color:#fff;background:#e8100a;
-  display:flex;align-items:center;justify-content:center;gap:4px;
+  flex:1;padding:8px 4px;border:none;border-radius:10px;
+  font-size:12px;font-weight:800;color:#fff;background:#e8100a;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  white-space:nowrap;
 }
 .mcard-btn-single:active{background:#c00800}
 
@@ -263,7 +269,7 @@ img{display:block}
 .cart-toggle-r{display:flex;align-items:center;gap:8px}
 .cart-toggle-total{font-size:15px;font-weight:900;color:#e8100a}
 .cart-toggle-arrow{font-size:13px;color:#f87171;display:inline-block;transition:transform 0.2s;line-height:1}
-.cart-list{max-height:144px;overflow-y:auto;scrollbar-width:none}
+.cart-list{max-height:130px;overflow-y:auto;scrollbar-width:none}
 .cart-list::-webkit-scrollbar{display:none}
 .cart-row{
   display:flex;align-items:center;gap:9px;
@@ -558,7 +564,7 @@ img{display:block}
 <div id="app"></div>
 <script>
 'use strict';
-const VER='1.0';
+const VER='3.1';
 
 // ── 유틸 ──────────────────────────────────────────────────
 function el(tag,attrs,ch){
@@ -794,7 +800,7 @@ function addOne(k){ setState(s=>({cart:s.cart.map(c=>c.cartKey===k?{...c,qty:c.q
 const appEl=document.getElementById('app');
 function render(){
   appEl.innerHTML='';
-  const wrap=el('div',{style:{width:'100%',height:'100%',display:'flex',flexDirection:'column',minHeight:'100vh'}});
+  const wrap=el('div',{style:{width:'100%',height:'100%',display:'flex',flexDirection:'column',overflow:'hidden'}});
 
   if(S.step===0){ wrap.appendChild(renderHome()); }
   else if(S.step===1){ wrap.appendChild(renderMenuHdr()); wrap.appendChild(renderStepBar(1)); wrap.appendChild(renderMenuBody()); wrap.appendChild(renderCartPanel()); wrap.appendChild(renderNavBar()); }
@@ -816,6 +822,8 @@ function renderCommonHdr(title){
   const brand=div('hdr-brand');
   brand.appendChild(el('div',{class:'hdr-brand-name'},'SNUBH BURGER'));
   brand.appendChild(el('div',{class:'hdr-brand-sub'},'분당서울대학교병원 고객식당'));
+  const verBadge=el('span',{style:{fontSize:'10px',background:'#f0ebe0',color:'#94a3b8',padding:'1px 7px',borderRadius:'10px',fontWeight:700,marginLeft:'6px'}},'v'+VER);
+  brand.appendChild(verBadge);
   h.appendChild(brand);
   if(title){h.appendChild(el('div',{style:{fontSize:'16px',fontWeight:800,color:'#1a0000',flexShrink:0}},title));}
   const c=btn('hdr-call','🔔 직원호출');h.appendChild(c);
