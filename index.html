@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#e8100a"/>
-<title>SNUBH BURGER 키오스크 v3.2</title>
+<title>SNUBH BURGER 키오스크 v3.3</title>
 <style>
 /* ── 리셋 & 기반 ──────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -477,6 +477,71 @@ img{display:block}
 .pay-summary{
   background:#fff5f5;padding:12px 16px;border-bottom:1px solid #fce8e8;flex-shrink:0;
 }
+
+/* ── 할인 선택 */
+.discount-section{padding:12px 14px;border-bottom:1px solid #f0ebe0;flex-shrink:0;background:#fff}
+.discount-title{font-size:13px;font-weight:700;color:#1a0000;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.discount-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.discount-btn{
+  padding:10px 8px;border:2px solid #f0ebe0;border-radius:11px;
+  background:#fff;cursor:pointer;font-family:inherit;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  transition:all 0.12s;
+}
+.discount-btn.sel{border-color:#e8100a;background:#fff5f5}
+.discount-btn-icon{font-size:20px}
+.discount-btn-label{font-size:11px;font-weight:700;color:#1a0000}
+.discount-btn-rate{font-size:10px;color:#94a3b8;font-weight:600}
+.discount-btn.sel .discount-btn-rate{color:#e8100a;font-weight:800}
+.discount-btn-none{
+  grid-column:1/-1;padding:9px;border:2px solid #f0ebe0;border-radius:11px;
+  background:#fafaf8;cursor:pointer;font-family:inherit;
+  font-size:12px;font-weight:600;color:#94a3b8;
+}
+.discount-btn-none.sel{border-color:#94a3b8;background:#f1f5f9;color:#475569}
+
+/* ── 적립 안내 */
+.point-notice{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;background:#fffbeb;border:1.5px solid #fde68a;
+  border-radius:10px;margin:10px 14px 0;flex-shrink:0;cursor:pointer;
+}
+.point-notice-icon{font-size:18px;flex-shrink:0}
+.point-notice-text{font-size:12px;color:#92400e;font-weight:600;flex:1}
+.point-notice-arrow{font-size:14px;color:#d97706}
+.point-notice.done{background:#f0fdf4;border-color:#86efac}
+.point-notice.done .point-notice-text{color:#166534}
+
+/* ── 전화번호 팝업 */
+.phone-popup{
+  position:fixed;inset:0;background:rgba(10,0,0,0.55);
+  z-index:9500;display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.phone-box{
+  background:#fff;border-radius:20px;padding:24px 20px;
+  width:100%;max-width:320px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.25);
+}
+.phone-title{font-size:18px;font-weight:900;color:#1a0000;text-align:center;margin-bottom:4px}
+.phone-sub{font-size:12px;color:#94a3b8;text-align:center;margin-bottom:16px}
+.phone-display{
+  font-size:24px;font-weight:800;color:#1a0000;text-align:center;
+  padding:12px;background:#fafaf8;border-radius:12px;border:2px solid #f0ebe0;
+  margin-bottom:14px;min-height:52px;letter-spacing:2px;
+}
+.phone-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.phone-key{
+  padding:14px 8px;border:1.5px solid #f0ebe0;border-radius:11px;
+  background:#fff;font-size:18px;font-weight:700;color:#1a0000;
+  cursor:pointer;font-family:inherit;transition:all 0.1s;
+}
+.phone-key:active{background:#f5f0e8}
+.phone-key.del{background:#fafaf8;font-size:16px;color:#64748b}
+.phone-key.zero{grid-column:2}
+.phone-btns{display:flex;gap:8px}
+.phone-cancel{flex:1;padding:13px;background:#f1f5f9;border:none;border-radius:11px;font-size:14px;font-weight:700;color:#64748b;cursor:pointer;font-family:inherit}
+.phone-confirm{flex:2;padding:13px;background:#e8100a;border:none;border-radius:11px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit}
+.phone-confirm:disabled{background:#94a3b8;cursor:not-allowed}
 .pay-summary-title{font-size:13px;font-weight:700;color:#a30000;margin-bottom:7px}
 .pay-summary-list{max-height:90px;overflow-y:auto;scrollbar-width:none}
 .pay-summary-row{display:flex;justify-content:space-between;font-size:12px;color:#334155;margin-bottom:3px;gap:8px}
@@ -564,7 +629,7 @@ img{display:block}
 <div id="app"></div>
 <script>
 'use strict';
-const VER='3.2';
+const VER='3.3';
 
 // ── 유틸 ──────────────────────────────────────────────────
 function el(tag,attrs,ch){
@@ -764,6 +829,9 @@ function initState(){
     cartOpen:true,
     payMethod:null,
     cancelConfirm:false,
+    discount:null,       // 선택된 할인 {id, label, rate, amount}
+    pointPhone:'',       // 적립 전화번호
+    pointPopup:false,    // 전화번호 입력 팝업
 
     // 팝업 상태
     popup:null,
@@ -1431,10 +1499,26 @@ function renderCancelModal(){
   ov.appendChild(box);return ov;
 }
 
-// ── 결제 화면 ─────────────────────────────────────────────
+// ── 할인 데이터 ─────────────────────────────────────────
+const DISCOUNTS=[
+  {id:'kt',       icon:'📱',label:'KT 멤버십',   rate:10, desc:'KT 통신사 10% 할인'},
+  {id:'skt',      icon:'📱',label:'SKT T멤버십', rate:10, desc:'SKT 통신사 10% 할인'},
+  {id:'lgu',      icon:'📱',label:'LG U+ 멤버십',rate:10, desc:'LG U+ 통신사 10% 할인'},
+  {id:'staff',    icon:'🏥',label:'직원 할인',    rate:20, desc:'병원 직원 20% 할인'},
+  {id:'senior',   icon:'👴',label:'경로 우대',    rate:10, desc:'만 65세 이상 10% 할인'},
+  {id:'student',  icon:'🎓',label:'학생 할인',    rate:5,  desc:'학생증 제시 5% 할인'},
+];
+
+// ── 결제 화면 ─────────────────────────────────────────
 function renderPayment(){
   const g=grand();
+  const disc=S.discount;
+  const discAmt=disc?Math.floor(g*disc.rate/100):0;
+  const finalAmt=g-discAmt;
+
   const wrap=el('div',{style:{flex:'1',display:'flex',flexDirection:'column',overflow:'hidden'}});
+
+  // 주문 내역 요약
   const sumWrap=div('pay-summary');
   sumWrap.appendChild(el('div',{class:'pay-summary-title'},'📋 주문 내역 확인'));
   const sl=div('pay-summary-list');
@@ -1445,15 +1529,70 @@ function renderPayment(){
     sl.appendChild(row);
   });
   sumWrap.appendChild(sl);
+
+  // 할인 적용 표시
+  if(discAmt>0){
+    const drow=div('pay-summary-row');
+    drow.style.cssText='color:#e8100a;margin-top:4px';
+    drow.appendChild(el('span',{},'🎫 '+disc.label+' ('+disc.rate+'%)'));
+    drow.appendChild(el('span',{},'- '+discAmt.toLocaleString()+'원'));
+    sl.appendChild(drow);
+  }
+
   const totR=div('pay-total-row');
-  totR.appendChild(el('span',{},'총 결제금액'));totR.appendChild(el('span',{},g.toLocaleString()+'원'));
-  sumWrap.appendChild(totR);wrap.appendChild(sumWrap);
+  if(discAmt>0){
+    const origEl=el('span',{style:{fontSize:'12px',color:'#94a3b8',textDecoration:'line-through',marginRight:'6px'}},g.toLocaleString()+'원');
+    totR.appendChild(el('span',{style:{display:'flex',alignItems:'center',gap:'6px',fontSize:'17px',fontWeight:900,color:'#e8100a'}},[origEl, finalAmt.toLocaleString()+'원']));
+  } else {
+    totR.appendChild(el('span',{},'총 결제금액'));
+    totR.appendChild(el('span',{},g.toLocaleString()+'원'));
+  }
+  sumWrap.appendChild(totR);
+  wrap.appendChild(sumWrap);
+
+  // ── 할인 선택 섹션
+  const discSec=div('discount-section');
+  const discTitle=div('discount-title');
+  discTitle.innerHTML='🎫 할인 선택 <span style="font-size:11px;color:#94a3b8;font-weight:500">(선택사항)</span>';
+  discSec.appendChild(discTitle);
+
+  const discGrid=div('discount-grid');
+  DISCOUNTS.forEach(d=>{
+    const isSel=S.discount&&S.discount.id===d.id;
+    const btn=el('button',{class:'discount-btn'+(isSel?' sel':'')});
+    btn.appendChild(el('span',{class:'discount-btn-icon'},d.icon));
+    btn.appendChild(el('span',{class:'discount-btn-label'},d.label));
+    btn.appendChild(el('span',{class:'discount-btn-rate'},d.rate+'% 할인'));
+    btn.addEventListener('click',()=>setState({discount:isSel?null:d}));
+    discGrid.appendChild(btn);
+  });
+  // 할인 없음 버튼
+  const noneBtn=el('button',{class:'discount-btn-none'+(!S.discount?' sel':'')},'할인 없음');
+  noneBtn.addEventListener('click',()=>setState({discount:null}));
+  discGrid.appendChild(noneBtn);
+  discSec.appendChild(discGrid);
+  wrap.appendChild(discSec);
+
+  // ── 포인트 적립 안내
+  const hasPhone = S.pointPhone.length===11;
+  const pointRow=div('point-notice'+(hasPhone?' done':''));
+  pointRow.appendChild(el('span',{class:'point-notice-icon'},hasPhone?'✅':'📲'));
+  const ptText=el('span',{class:'point-notice-text'});
+  ptText.textContent=hasPhone
+    ? '적립 번호: '+S.pointPhone.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3')
+    : '포인트 적립 · 전화번호를 입력하세요';
+  pointRow.appendChild(ptText);
+  pointRow.appendChild(el('span',{class:'point-notice-arrow'},hasPhone?'✏️':'›'));
+  pointRow.addEventListener('click',()=>setState({pointPopup:true}));
+  wrap.appendChild(pointRow);
+
+  // ── 결제 수단
   const methods=div('pay-methods');
-  [{id:'card',label:'신용카드 / 체크카드',emoji:'💳',sub:'IC칩 · 마그네틱 · 비접촉'},
-   {id:'kakao',label:'카카오페이',emoji:'💛',sub:'카카오페이 앱 QR'},
-   {id:'payco',label:'페이코',emoji:'🔴',sub:'PAYCO 앱 바코드'},
-   {id:'naver',label:'네이버페이',emoji:'💚',sub:'네이버페이 QR'},
-   {id:'cash',label:'현금',emoji:'💵',sub:'카운터에서 수납'},
+  [{id:'card', label:'신용카드 / 체크카드',  emoji:'💳',sub:'IC칩 · 마그네틱 · 비접촉'},
+   {id:'kakao',label:'카카오페이',            emoji:'💛',sub:'카카오페이 앱 QR'},
+   {id:'payco',label:'페이코',                emoji:'🔴',sub:'PAYCO 앱 바코드'},
+   {id:'naver',label:'네이버페이',            emoji:'💚',sub:'네이버페이 QR'},
+   {id:'cash', label:'현금',                  emoji:'💵',sub:'카운터에서 수납'},
   ].forEach(m=>{
     const sel=S.payMethod===m.id;
     const b=div('pay-method'+(sel?' sel':''));
@@ -1467,15 +1606,80 @@ function renderPayment(){
     methods.appendChild(b);
   });
   wrap.appendChild(methods);
+
+  // 하단 버튼
   const footer=div('pay-footer');
   const backBtn=el('button',{class:'pay-back'},'← 뒤로');
   backBtn.addEventListener('click',()=>setState({step:1}));
   const goBtn=el('button',{class:'pay-go'+(S.payMethod?'':' disabled')});
-  goBtn.textContent='결제하기 →';if(!S.payMethod)goBtn.disabled=true;
+  goBtn.textContent='결제하기 '+finalAmt.toLocaleString()+'원 →';
+  if(!S.payMethod)goBtn.disabled=true;
   goBtn.addEventListener('click',()=>setState({step:3}));
-  footer.appendChild(backBtn);footer.appendChild(goBtn);wrap.appendChild(footer);
+  footer.appendChild(backBtn);footer.appendChild(goBtn);
+  wrap.appendChild(footer);
+
+  // 전화번호 팝업
+  if(S.pointPopup) wrap.appendChild(renderPhonePopup());
+
   return wrap;
 }
+
+// ── 전화번호 입력 팝업 ────────────────────────────────
+function renderPhonePopup(){
+  const phone=S.pointPhone;
+  const overlay=div('phone-popup');
+  overlay.addEventListener('click',e=>{if(e.target===overlay)setState({pointPopup:false});});
+
+  const box=div('phone-box');
+  box.appendChild(el('div',{class:'phone-title'},'📲 포인트 적립'));
+  box.appendChild(el('div',{class:'phone-sub'},'전화번호 11자리를 입력해주세요'));
+
+  // 번호 표시
+  const display=div('phone-display');
+  const formatted = phone.length===0 ? '___  ____  ____' :
+    phone.length<=3 ? phone :
+    phone.length<=7 ? phone.slice(0,3)+' - '+phone.slice(3) :
+    phone.slice(0,3)+' - '+phone.slice(3,7)+' - '+phone.slice(7);
+  display.textContent=formatted;
+  box.appendChild(display);
+
+  // 키패드
+  const keypad=div('phone-keypad');
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+    if(k===''){
+      const empty=div('');
+      keypad.appendChild(empty);
+      return;
+    }
+    const btn=el('button',{class:'phone-key'+(k==='⌫'?' del':'')+(k==='0'?' zero':'')});
+    btn.textContent=k;
+    btn.addEventListener('click',()=>{
+      if(k==='⌫'){
+        setState({pointPhone:phone.slice(0,-1)});
+      } else if(phone.length<11){
+        setState({pointPhone:phone+k});
+      }
+    });
+    keypad.appendChild(btn);
+  });
+  box.appendChild(keypad);
+
+  // 버튼
+  const btns=div('phone-btns');
+  const cancelBtn=el('button',{class:'phone-cancel'},'취소');
+  cancelBtn.addEventListener('click',()=>setState({pointPopup:false,pointPhone:''}));
+  const confirmBtn=el('button',{class:'phone-confirm'+(phone.length!==11?' disabled':'')});
+  confirmBtn.textContent=phone.length===11?'✓ 적립 완료':'번호를 입력해주세요';
+  confirmBtn.disabled=phone.length!==11;
+  confirmBtn.addEventListener('click',()=>{
+    if(phone.length===11) setState({pointPopup:false});
+  });
+  btns.appendChild(cancelBtn);btns.appendChild(confirmBtn);
+  box.appendChild(btns);
+  overlay.appendChild(box);
+  return overlay;
+}
+
 
 // ── 완료 화면 ─────────────────────────────────────────────
 function renderDone(){
@@ -1491,6 +1695,33 @@ function renderDone(){
   wb.appendChild(el('span',{},'8분'));nb.appendChild(wb);
   nb.appendChild(el('p',{style:{fontSize:'12px',color:'#94a3b8',marginTop:'10px'}},'번호 호출 시 카운터에서 수령해주세요'));
   body.appendChild(nb);
+
+  // 할인 + 적립 정보 박스
+  if(S.discount||S.pointPhone.length===11){
+    const infoBox=div('done-receipt');
+    if(S.discount){
+      const discAmtFin=Math.floor(g*S.discount.rate/100);
+      const dr=div('done-receipt-row');
+      dr.appendChild(el('span',{style:{color:'#e8100a',fontWeight:700}},'🎫 '+S.discount.label+' '+S.discount.rate+'% 할인'));
+      dr.appendChild(el('span',{style:{color:'#e8100a',fontWeight:700}},'-'+discAmtFin.toLocaleString()+'원'));
+      infoBox.appendChild(dr);
+    }
+    if(S.pointPhone.length===11){
+      const fp=S.pointPhone.slice(0,3)+'-'+S.pointPhone.slice(3,7)+'-'+S.pointPhone.slice(7);
+      const pr=div('done-receipt-row');
+      pr.appendChild(el('span',{style:{color:'#d97706',fontWeight:700}},'📲 포인트 적립 번호'));
+      pr.appendChild(el('span',{style:{color:'#d97706',fontWeight:600}},fp));
+      infoBox.appendChild(pr);
+      const discAmtFin2=S.discount?Math.floor(g*S.discount.rate/100):0;
+      const earnPts=Math.floor((g-discAmtFin2)*0.01);
+      const ptRow=div('done-receipt-row');
+      ptRow.appendChild(el('span',{style:{color:'#94a3b8',fontSize:'11px'}},'예상 적립 포인트 (1%)'));
+      ptRow.appendChild(el('span',{style:{color:'#059669',fontSize:'12px',fontWeight:800}},'+'+earnPts+'P'));
+      infoBox.appendChild(ptRow);
+    }
+    body.appendChild(infoBox);
+  }
+
   const receipt=div('done-receipt');
   receipt.appendChild(el('div',{class:'done-receipt-title'},'주문 내역'));
   S.cart.forEach(item=>{
@@ -1499,7 +1730,11 @@ function renderDone(){
     row.appendChild(el('span',{},rowT(item).toLocaleString()+'원'));
     receipt.appendChild(row);
   });
-  const tr=div('done-total-row');tr.appendChild(el('span',{},'합계'));tr.appendChild(el('span',{},g.toLocaleString()+'원'));
+  const discAmtD=S.discount?Math.floor(g*S.discount.rate/100):0;
+const finalD=g-discAmtD;
+const tr=div('done-total-row');
+tr.appendChild(el('span',{},'최종 결제금액'));
+tr.appendChild(el('span',{},finalD.toLocaleString()+'원'));
   receipt.appendChild(tr);
   const rb=div('done-rcpt-btns');
   [['🖨️','영수증 출력'],['✕','영수증 없이']].forEach(([ico,t])=>{
