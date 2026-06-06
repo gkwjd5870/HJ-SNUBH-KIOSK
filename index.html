@@ -3,9 +3,556 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#e8100a"/>
 <title>분당버거 키오스크</title>
 <style>
+
+/* ── 리셋 & 기반 ──────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{
+  width:100%;height:100%;
+  font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  background:#f5f0e8;
+  overscroll-behavior:none;
+  -webkit-text-size-adjust:100%;
+}
+button{font-family:inherit;cursor:pointer;-webkit-appearance:none;outline:none;border:none;background:none}
+img{display:block}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+
+/* ── 앱 컨테이너 ─────────────────────────────────────────── */
+#app{
+  width:100%;max-width:480px;min-height:100vh;
+  background:#fff;
+  display:flex;flex-direction:column;
+  margin:0 auto;
+  box-shadow:0 0 40px rgba(0,0,0,0.15);
+  overflow:hidden;position:relative;
+}
+
+/* ══════════════════════════════════════════════════
+   공통 컴포넌트
+   ══════════════════════════════════════════════════ */
+
+/* 상단 헤더 */
+.hdr{
+  background:#fff;border-bottom:1px solid #f0ebe0;
+  padding:10px 14px 8px;flex-shrink:0;
+  display:flex;align-items:center;gap:10px;
+}
+.hdr-logo{
+  width:40px;height:40px;flex-shrink:0;
+  border-radius:10px;overflow:hidden;
+  background:#e8100a;display:flex;align-items:center;justify-content:center;
+}
+.hdr-logo span{font-size:22px}
+.hdr-brand{flex:1;min-width:0}
+.hdr-brand-name{font-size:17px;font-weight:900;color:#1a0000;letter-spacing:-0.3px}
+.hdr-brand-sub{font-size:10px;color:#94a3b8;margin-top:1px}
+.hdr-call{
+  background:#fff;border:2px solid #e8100a;color:#e8100a;
+  padding:7px 12px;border-radius:18px;font-size:12px;font-weight:700;
+  flex-shrink:0;
+}
+
+/* 단계 표시 바 */
+.step-bar{
+  background:#fafaf8;border-bottom:1px solid #f0ebe0;
+  padding:7px 14px;flex-shrink:0;
+  display:flex;align-items:center;gap:0;
+}
+.step-item{
+  display:flex;align-items:center;gap:4px;font-size:11px;color:#bbb;font-weight:600;
+}
+.step-item.active .step-num{background:#e8100a;color:#fff}
+.step-item.done .step-num{background:#22c55e;color:#fff}
+.step-num{
+  width:20px;height:20px;border-radius:50%;
+  background:#e2e8f0;color:#94a3b8;
+  font-size:10px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.step-item.active .step-label{color:#e8100a;font-weight:800}
+.step-item.done  .step-label{color:#22c55e}
+.step-arrow{margin:0 6px;color:#ddd;font-size:10px}
+
+/* 하단 네비 바 */
+.nav-bar{
+  background:#fff;border-top:1px solid #f0ebe0;
+  display:flex;align-items:stretch;flex-shrink:0;
+}
+.nav-btn{
+  flex:1;padding:10px 2px 9px;background:#fff;border:none;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:#555;font-size:10px;font-weight:600;position:relative;
+  transition:background 0.1s;
+}
+.nav-btn:active{background:#fafaf8}
+.nav-btn-icon{font-size:18px}
+.nav-badge{
+  position:absolute;top:5px;right:12%;
+  width:17px;height:17px;border-radius:50%;
+  background:#e8100a;color:#fff;
+  font-size:9px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* 버전 태그 */
+.ver{text-align:right;background:#fff;padding:1px 10px 3px;flex-shrink:0;font-size:9px;color:#e8e0d8}
+
+/* 오버레이 팝업 */
+.overlay{
+  position:absolute;inset:0;
+  background:rgba(10,0,0,0.55);
+  z-index:80;display:flex;align-items:flex-end;
+}
+.sheet{
+  background:#fff;border-radius:22px 22px 0 0;
+  width:100%;padding:18px 16px 28px;
+  max-height:88vh;overflow-y:auto;
+}
+.sheet-handle{
+  width:40px;height:4px;background:#e2e8f0;
+  border-radius:2px;margin:0 auto 16px;
+}
+
+/* 취소 팝업 (중앙) */
+.modal-center{
+  position:absolute;inset:0;
+  background:rgba(10,0,0,0.55);
+  z-index:90;display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.modal-box{
+  background:#fff;border-radius:20px;padding:28px 22px;
+  width:100%;max-width:300px;text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,0.25);
+}
+
+/* ══════════════════════════════════════════════════
+   홈 화면 (step 0)
+   ══════════════════════════════════════════════════ */
+.home-body{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:32px 24px;gap:22px;
+  background:#fff;
+}
+.home-hero{
+  text-align:center;
+}
+.home-hero h1{font-size:26px;font-weight:900;color:#1a0000;margin-bottom:6px;line-height:1.3}
+.home-hero p{font-size:14px;color:#94a3b8}
+.home-btns{display:flex;gap:14px;width:100%;max-width:320px}
+.home-btn{
+  flex:1;padding:28px 10px;background:#fff;
+  border:3px solid #e8100a;border-radius:18px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  transition:all 0.12s;
+}
+.home-btn:active{background:#fff5f5;transform:scale(0.97)}
+.home-btn-emoji{font-size:42px}
+.home-btn-label{font-size:17px;font-weight:900;color:#e8100a}
+.home-btn-sub{font-size:12px;color:#94a3b8;font-weight:500}
+
+/* ══════════════════════════════════════════════════
+   메뉴 선택 화면 (step 1)
+   ══════════════════════════════════════════════════ */
+.menu-layout{
+  flex:1;overflow:hidden;
+  display:flex;flex-direction:column;
+  min-height:0;
+}
+.menu-title-bar{
+  padding:10px 14px 6px;background:#fff;
+  border-bottom:1px solid #f0ebe0;flex-shrink:0;
+  display:flex;align-items:center;gap:8px;
+}
+.menu-title-bar h2{font-size:16px;font-weight:800;color:#1a0000}
+
+/* 좌측 카테고리 사이드바 */
+.menu-main{flex:1;display:flex;overflow:hidden;min-height:0}
+.cat-sidebar{
+  width:72px;background:#fafaf8;border-right:1px solid #f0ebe0;
+  display:flex;flex-direction:column;overflow-y:auto;
+  flex-shrink:0;scrollbar-width:none;
+}
+.cat-sidebar::-webkit-scrollbar{display:none}
+.cat-btn{
+  width:100%;padding:14px 4px 12px;background:transparent;border:none;
+  border-left:3px solid transparent;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  transition:all 0.12s;flex-shrink:0;
+}
+.cat-btn.on{background:#fff5f5;border-left:3px solid #e8100a}
+.cat-btn-emoji{font-size:22px}
+.cat-btn-label{font-size:10px;font-weight:600;color:#aaa;line-height:1.2;text-align:center}
+.cat-btn.on .cat-btn-label{color:#e8100a;font-weight:800}
+
+/* 중앙 카드 그리드 */
+.card-grid{
+  flex:1;overflow-y:auto;padding:10px;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;align-content:start;
+  scrollbar-width:none;
+}
+.card-grid::-webkit-scrollbar{display:none}
+
+/* 메뉴 카드 */
+.mcard{
+  background:#fff;border:2px solid #f0ebe0;border-radius:16px;
+  overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  transition:border-color 0.12s,box-shadow 0.12s;
+  position:relative;
+}
+.mcard.incart{border-color:#e8100a;box-shadow:0 4px 14px rgba(232,16,10,0.15)}
+.mcard-img{height:108px;overflow:hidden;background:#f5f0e8;flex-shrink:0}
+.mcard-img img{width:100%;height:108px;object-fit:cover}
+.mcard-tag{
+  position:absolute;top:8px;left:8px;
+  background:#e8100a;color:#fff;font-size:10px;padding:3px 9px;
+  border-radius:20px;font-weight:800;z-index:2;
+}
+.mcard-badge{
+  position:absolute;top:8px;right:8px;
+  background:#e8100a;color:#fff;font-size:10px;width:22px;height:22px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:800;z-index:2;
+}
+.mcard-body{padding:9px 10px 4px}
+.mcard-name{font-size:14px;font-weight:800;color:#1a0000;line-height:1.3}
+.mcard-desc{font-size:10px;color:#94a3b8;margin-top:2px;line-height:1.3}
+.mcard-price{font-size:17px;font-weight:900;color:#e8100a;margin-top:5px}
+
+/* 카드 하단 버튼 행 (버거: 단품/세트, 나머지: 담기) */
+.mcard-btns{
+  display:flex;gap:6px;padding:8px 8px 10px;
+}
+.mcard-btn-outline{
+  flex:1;padding:9px 4px;border:2px solid #e8100a;border-radius:10px;
+  font-size:12px;font-weight:700;color:#e8100a;background:#fff;
+  transition:all 0.12s;
+}
+.mcard-btn-outline:active{background:#fff5f5}
+.mcard-btn-fill{
+  flex:1;padding:9px 4px;border:none;border-radius:10px;
+  font-size:12px;font-weight:800;color:#fff;background:#e8100a;
+  transition:all 0.12s;
+}
+.mcard-btn-fill:active{background:#c00800}
+.mcard-btn-single{
+  flex:1;padding:10px 4px;border:none;border-radius:10px;
+  font-size:13px;font-weight:800;color:#fff;background:#e8100a;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+}
+.mcard-btn-single:active{background:#c00800}
+
+/* ── 장바구니 패널 ──────────────────────────────────────── */
+.cart-panel{
+  background:#fff;border-top:3px solid #e8100a;flex-shrink:0;
+}
+.cart-toggle{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:9px 14px;background:#fff5f5;border:none;cursor:pointer;font-family:inherit;
+  border-bottom:1px solid #fce8e8;
+}
+.cart-toggle-l{display:flex;align-items:center;gap:6px}
+.cart-toggle-title{font-size:14px;font-weight:800;color:#a30000}
+.cart-toggle-count{font-size:12px;font-weight:600;color:#e8100a}
+.cart-toggle-r{display:flex;align-items:center;gap:8px}
+.cart-toggle-total{font-size:15px;font-weight:900;color:#e8100a}
+.cart-toggle-arrow{font-size:13px;color:#f87171;display:inline-block;transition:transform 0.2s;line-height:1}
+.cart-list{max-height:144px;overflow-y:auto;scrollbar-width:none}
+.cart-list::-webkit-scrollbar{display:none}
+.cart-row{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px;border-bottom:1px solid #fff5f5;
+}
+.cart-thumb{
+  width:38px;height:38px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#f5f0e8;
+}
+.cart-thumb img{width:38px;height:38px;object-fit:cover;display:block}
+.cart-info{flex:1;min-width:0}
+.cart-name{font-size:12px;font-weight:700;color:#1a0000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-sub{font-size:10px;color:#94a3b8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-price{font-size:12px;font-weight:700;color:#e8100a;margin-top:2px}
+.cart-qctrl{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.cart-minus,.cart-plus{
+  width:26px;height:26px;border-radius:50%;font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.cart-minus{border:1.5px solid #f0ebe0;background:#fff;color:#555}
+.cart-plus{background:#e8100a;color:#fff;border:none}
+.cart-qty{font-size:13px;font-weight:700;min-width:16px;text-align:center;color:#1a0000}
+.cart-empty{padding:12px 14px;text-align:center;font-size:13px;color:#ccc}
+.cart-actions{padding:8px 12px 10px;display:flex;align-items:center;gap:8px}
+.cart-del-all{font-size:11px;color:#aaa;background:none;border:none;cursor:pointer}
+.cart-checkout{
+  flex:1;padding:12px;background:#e8100a;color:#fff;
+  border:none;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+
+/* ══════════════════════════════════════════════════
+   팝업: 단품 / 세트 선택 (버거타입)
+   ══════════════════════════════════════════════════ */
+.type-thumb{
+  width:72px;height:64px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#f5f0e8;
+}
+.type-opt{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 14px;border:2px solid #f0ebe0;border-radius:14px;
+  cursor:pointer;transition:all 0.12s;background:#fff;
+}
+.type-opt:active,.type-opt.sel{border-color:#e8100a;background:#fff5f5}
+.type-opt-rec{border-color:#e8100a;background:#fff5f5}
+.type-opt-info{flex:1}
+.type-opt-title{font-size:16px;font-weight:800;color:#1a0000}
+.type-opt-desc{font-size:11px;color:#94a3b8;margin-top:3px}
+.type-opt-price{text-align:right;flex-shrink:0}
+.type-opt-price-val{font-size:17px;font-weight:900;color:#e8100a}
+.type-opt-rec-badge{
+  font-size:10px;background:#e8100a;color:#fff;
+  padding:2px 8px;border-radius:10px;font-weight:700;
+  display:inline-block;margin-top:4px;
+}
+
+/* ══════════════════════════════════════════════════
+   팝업: 세트 구성 확인 + 재료변경/음료변경
+   ══════════════════════════════════════════════════ */
+.set-section{
+  background:#fff;border:2px solid #f0ebe0;border-radius:14px;overflow:hidden;margin-bottom:10px;
+}
+.set-section.highlight{border-color:#e8100a}
+.set-section-hdr{
+  padding:9px 13px;background:#fafaf8;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid #f0ebe0;
+}
+.set-section-title{font-size:13px;font-weight:700;color:#334155}
+.set-change-btn{
+  padding:5px 12px;border:1.5px solid #e8100a;border-radius:10px;
+  font-size:11px;font-weight:700;color:#e8100a;background:#fff;cursor:pointer;font-family:inherit;
+}
+.set-section-body{display:flex;align-items:center;gap:10px;padding:11px 13px}
+.set-item-thumb{width:56px;height:50px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f5f0e8}
+.set-item-thumb img{width:56px;height:50px;object-fit:cover;display:block}
+.set-item-info{flex:1}
+.set-item-name{font-size:14px;font-weight:700;color:#1a0000}
+.set-item-sub{font-size:10px;color:#94a3b8;margin-top:2px}
+.set-item-price{font-size:13px;font-weight:700;color:#64748b;flex-shrink:0}
+.set-item-included{font-size:10px;color:#22c55e;font-weight:600;margin-top:2px}
+.set-total-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 13px;background:#fff5f5;border-radius:12px;margin-bottom:12px;
+}
+.set-total-label{font-size:14px;font-weight:700;color:#7f1d1d}
+.set-total-val{font-size:20px;font-weight:900;color:#e8100a}
+
+/* ══════════════════════════════════════════════════
+   팝업: 재료 변경 (추가재료 / 빼기재료 세로형)
+   ══════════════════════════════════════════════════ */
+.top-popup-title{
+  text-align:center;font-size:20px;font-weight:900;color:#1a0000;
+  margin-bottom:4px;
+}
+.top-popup-sub{
+  text-align:center;font-size:13px;color:#94a3b8;margin-bottom:18px;
+}
+.top-popup-burger-icon{
+  text-align:center;font-size:48px;margin-bottom:6px;
+}
+.top-popup-burger-name{
+  text-align:center;font-size:17px;font-weight:800;color:#1a0000;margin-bottom:18px;
+}
+.top-section-label{
+  display:flex;align-items:center;gap:6px;
+  font-size:16px;font-weight:800;margin-bottom:10px;
+}
+.top-section-label.add{color:#6c2bd9}
+.top-section-label.remove{color:#e8100a}
+.top-section-label svg{flex-shrink:0}
+
+/* 추가재료 — 체크박스 스타일 */
+.top-add-row{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 14px;border:1.5px solid #e2e8f0;border-radius:12px;
+  cursor:pointer;background:#fff;margin-bottom:8px;
+  transition:all 0.12s;font-family:inherit;width:100%;
+}
+.top-add-row.on{border-color:#6c2bd9;background:#faf5ff}
+.top-add-checkbox{
+  width:26px;height:26px;border:2px solid #e2e8f0;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;transition:all 0.12s;background:#fff;color:transparent;
+}
+.top-add-row.on .top-add-checkbox{
+  border-color:#6c2bd9;background:#6c2bd9;color:#fff;
+}
+.top-add-label{flex:1;font-size:16px;font-weight:600;color:#1a0000;text-align:left}
+.top-add-price{font-size:15px;font-weight:700;color:#94a3b8}
+.top-add-row.on .top-add-price{color:#6c2bd9}
+
+/* 빼기재료 — 빨간 체크박스 스타일 */
+.top-rm-row{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 14px;border:1.5px solid #fecaca;border-radius:12px;
+  cursor:pointer;background:#fff5f5;margin-bottom:8px;
+  transition:all 0.12s;font-family:inherit;width:100%;
+}
+.top-rm-row.removed{border-color:#e2e8f0;background:#fff}
+.top-rm-checkbox{
+  width:26px;height:26px;border:2px solid #e8100a;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;background:#e8100a;color:#fff;
+  transition:all 0.12s;
+}
+.top-rm-row.removed .top-rm-checkbox{
+  border-color:#e2e8f0;background:#fff;color:transparent;
+}
+.top-rm-label{flex:1;font-size:16px;font-weight:600;color:#1a0000;text-align:left}
+.top-rm-badge{font-size:13px;font-weight:700;color:#e8100a}
+.top-rm-row.removed .top-rm-label{color:#94a3b8;text-decoration:line-through}
+.top-rm-row.removed .top-rm-badge{color:#94a3b8}
+.top-rm-hint{font-size:12px;color:#94a3b8;margin-bottom:14px;margin-top:-4px}
+
+/* 추가금액 표시 */
+.top-extra-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:#faf5ff;border-radius:10px;
+  margin-bottom:14px;
+}
+.top-extra-label{font-size:14px;font-weight:600;color:#6c2bd9}
+.top-extra-val{font-size:17px;font-weight:900;color:#6c2bd9}
+
+/* ══════════════════════════════════════════════════
+   팝업: 음료 변경
+   ══════════════════════════════════════════════════ */
+.drink-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:260px;overflow-y:auto;scrollbar-width:none;
+}
+.drink-grid::-webkit-scrollbar{display:none}
+.drink-card{
+  border:2px solid #f0ebe0;border-radius:14px;overflow:hidden;
+  cursor:pointer;background:#fff;position:relative;transition:all 0.12s;
+}
+.drink-card.sel{border-color:#e8100a;box-shadow:0 4px 14px rgba(232,16,10,0.18)}
+.drink-card-img{height:80px;overflow:hidden;background:#f5f0e8}
+.drink-card-img img{width:100%;height:80px;object-fit:cover;display:block}
+.drink-card-info{padding:7px 9px 9px}
+.drink-card-name{font-size:12px;font-weight:700;color:#1a0000}
+.drink-card-price{font-size:12px;font-weight:700;color:#e8100a;margin-top:3px}
+.drink-sel-badge{
+  position:absolute;top:6px;right:6px;
+  background:#e8100a;color:#fff;border-radius:50%;
+  width:20px;height:20px;font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;z-index:2;
+}
+
+/* ══════════════════════════════════════════════════
+   사이즈 팝업 (비버거 메뉴)
+   ══════════════════════════════════════════════════ */
+.size-row{display:flex;gap:8px;margin-bottom:12px}
+.size-btn{
+  flex:1;padding:14px 4px;border:2px solid #f0ebe0;border-radius:12px;
+  background:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-family:inherit;
+}
+.size-btn.rec{border-color:#e8100a;background:#fff5f5}
+.size-btn:active{background:#fff5f5}
+.size-label{font-size:20px;font-weight:900;color:#1a0000}
+.size-price{font-size:13px;color:#64748b;font-weight:600}
+.size-btn.rec .size-label,.size-btn.rec .size-price{color:#e8100a}
+.size-rec-badge{font-size:9px;background:#e8100a;color:#fff;padding:1px 8px;border-radius:10px;font-weight:800}
+
+/* ══════════════════════════════════════════════════
+   결제 화면
+   ══════════════════════════════════════════════════ */
+.pay-summary{
+  background:#fff5f5;padding:12px 16px;border-bottom:1px solid #fce8e8;flex-shrink:0;
+}
+.pay-summary-title{font-size:13px;font-weight:700;color:#a30000;margin-bottom:7px}
+.pay-summary-list{max-height:90px;overflow-y:auto;scrollbar-width:none}
+.pay-summary-row{display:flex;justify-content:space-between;font-size:12px;color:#334155;margin-bottom:3px;gap:8px}
+.pay-summary-row span:last-child{font-weight:700;flex-shrink:0}
+.pay-total-row{
+  display:flex;justify-content:space-between;
+  font-size:17px;font-weight:900;color:#e8100a;
+  padding-top:8px;border-top:1px solid #fce8e8;margin-top:6px;
+}
+.pay-methods{flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.pay-method{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 14px;border:2px solid #f0ebe0;border-radius:14px;
+  cursor:pointer;background:#fff;transition:all 0.12s;
+}
+.pay-method.sel{border-color:#e8100a;background:#fff5f5}
+.pay-method-ico{
+  width:46px;height:46px;border-radius:10px;background:#f8faff;
+  display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;
+}
+.pay-method.sel .pay-method-ico{background:#fce8e8}
+.pay-method-info{flex:1}
+.pay-method-name{font-size:14px;font-weight:700;color:#1a0000}
+.pay-method-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.pay-method-chk{
+  width:26px;height:26px;border-radius:50%;background:#e8100a;
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:800;flex-shrink:0;
+}
+.pay-footer{
+  padding:10px 14px 12px;background:#fff;border-top:1px solid #f0ebe0;
+  display:flex;gap:10px;flex-shrink:0;
+}
+.pay-back{
+  flex:1;padding:14px;background:#f1f5f9;color:#64748b;
+  border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+}
+.pay-go{
+  flex:2;padding:14px;background:#e8100a;color:#fff;
+  border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;
+}
+.pay-go:disabled{background:#94a3b8;cursor:not-allowed}
+
+/* ══════════════════════════════════════════════════
+   완료 화면
+   ══════════════════════════════════════════════════ */
+.done-body{
+  flex:1;overflow-y:auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px 16px;gap:14px;
+}
+.done-icon{font-size:64px;text-align:center}
+.done-title{font-size:22px;font-weight:900;color:#1a0000;text-align:center}
+.done-num-box{
+  background:#fff;border-radius:18px;padding:20px;width:100%;
+  border:2px solid #fce8e8;text-align:center;
+  box-shadow:0 4px 16px rgba(232,16,10,0.08);
+}
+.done-num-label{font-size:14px;color:#64748b;font-weight:600;margin-bottom:4px}
+.done-num{font-size:66px;font-weight:900;color:#e8100a;line-height:1}
+.done-wait{
+  margin-top:12px;padding:9px 18px;background:#fff5f5;border-radius:12px;
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:15px;font-weight:700;color:#a30000;
+}
+.done-wait span:last-child{font-size:19px;color:#e8100a;font-weight:900}
+.done-receipt{background:#fff;border-radius:14px;padding:14px;width:100%;border:1px solid #f0ebe0}
+.done-receipt-title{font-size:13px;font-weight:700;color:#1a0000;margin-bottom:8px}
+.done-receipt-row{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:5px;gap:8px}
+.done-receipt-row span:last-child{font-weight:600;flex-shrink:0}
+.done-total-row{display:flex;justify-content:space-between;font-weight:800;color:#e8100a;padding-top:8px;border-top:1px solid #f0ebe0;font-size:14px}
+.done-rcpt-btns{display:flex;gap:8px;margin-top:6px}
+.done-rcpt-btn{
+  flex:1;padding:11px;background:#fafaf8;border:1.5px solid #f0ebe0;
+  border-radius:11px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.done-home-btn{
+  width:100%;padding:16px;background:#e8100a;color:#fff;
+  border:none;border-radius:14px;font-size:16px;font-weight:800;
+  cursor:pointer;font-family:inherit;
+}
+
 /* ── 리셋 & 기반 ──────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{
@@ -622,13 +1169,66 @@ img{display:block}
   border:none;border-radius:14px;font-size:16px;font-weight:800;
   cursor:pointer;font-family:inherit;
 }
+
+/* ══════════════════════════════════════════════════
+   훈련과제 오버레이
+   ══════════════════════════════════════════════════ */
+.task-overlay{position:fixed;inset:0;background:rgba(10,0,0,0.6);z-index:8500;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.task-panel{background:#f8faff;border-radius:24px 24px 0 0;width:100%;max-width:480px;height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 32px rgba(0,0,0,0.2)}
+.task-panel-header{background:#1e40af;padding:14px 16px;flex-shrink:0;display:flex;align-items:center;gap:10px}
+.task-panel-title{color:#fff;font-size:17px;font-weight:900;flex:1;display:flex;align-items:center;gap:8px}
+.task-panel-close{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.18);border:none;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;flex-shrink:0}
+.task-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.task-level-bar{background:#fff;border-radius:14px;padding:12px 14px;border:2px solid #e2e8f0}
+.task-level-label{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px}
+.task-lv-row{display:flex;gap:7px}
+.task-lv-btn{flex:1;padding:10px 4px;border-radius:11px;border:2px solid #e2e8f0;background:#fff;font-size:13px;font-weight:800;color:#64748b;cursor:pointer;font-family:inherit;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.task-lv-btn.on{background:#1e40af;border-color:#1e40af;color:#fff}
+.task-lv-desc{font-size:10px;font-weight:500;opacity:0.75;text-align:center;line-height:1.3}
+.task-gen-btn{width:100%;padding:15px;background:#e8100a;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(232,16,10,0.25);flex-shrink:0}
+.task-gen-btn:disabled{background:#94a3b8;box-shadow:none;cursor:not-allowed}
+.task-card{background:#fff;border-radius:16px;padding:16px;border:2px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.task-card-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.task-card-title{font-size:15px;font-weight:800;color:#1a0000}
+.task-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.task-badge-level{background:#eff6ff;color:#1e40af}
+.task-area-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.task-area-tag{padding:3px 10px;border-radius:20px;background:#fff5f5;color:#e8100a;font-size:11px;font-weight:600;border:1px solid #fecaca}
+.task-section-title{font-size:12px;font-weight:700;margin-bottom:6px}
+.task-situation{background:#fafaf8;border-radius:10px;padding:12px;font-size:14px;color:#334155;line-height:1.7;margin-bottom:10px;border-left:4px solid #1e40af}
+.task-situation .task-section-title{color:#1e40af}
+.task-dialogue{background:#f0f4ff;border-radius:10px;padding:12px;margin-bottom:10px}
+.task-dialogue .task-section-title{color:#1e40af}
+.task-dialogue-line{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.task-who{font-size:12px;font-weight:800;color:#1e40af;white-space:nowrap;flex-shrink:0;min-width:46px;margin-top:6px}
+.task-text{font-size:14px;color:#1e293b;line-height:1.6;background:#fff;border-radius:8px;padding:7px 10px;flex:1;border:1px solid #dbeafe}
+.task-mission{background:#fefce8;border-radius:10px;padding:12px;border:1px solid #fde68a}
+.task-mission .task-section-title{color:#92400e}
+.task-mission-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;font-size:13px;color:#44403c;line-height:1.5}
+.task-mission-num{width:22px;height:22px;border-radius:50%;background:#1e40af;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.task-note{background:#f1f5f9;border-radius:10px;padding:10px 12px;font-size:12px;color:#64748b;line-height:1.6;border:1px solid #e2e8f0}
+.task-note .task-section-title{color:#475569}
+.task-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:14px;color:#94a3b8}
+.task-loading-spinner{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#1e40af;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.task-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px;gap:10px;color:#94a3b8;text-align:center}
+.task-empty-icon{font-size:52px}
+.task-empty-text{font-size:15px;font-weight:700;color:#64748b}
+.task-empty-sub{font-size:13px;color:#94a3b8;line-height:1.6}
+.task-hint{background:#eff6ff;border-radius:12px;padding:12px 14px;border:1px solid #dbeafe}
+.task-hint-title{font-size:12px;font-weight:700;color:#1e40af;margin-bottom:5px}
+.task-hint-text{font-size:12px;color:#3b5bdb;line-height:1.7}
+
+
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
+
+
 'use strict';
-const VER='4.5';
+const VER='4.7';
 
 // ── 유틸 ──────────────────────────────────────────────────
 function el(tag,attrs,ch){
@@ -834,6 +1434,7 @@ function initState(){
     discount:null,
     pointPhone:'',
     pointPopup:false,
+    taskOpen:false,
     popup:null,
   };
 }
@@ -871,6 +1472,7 @@ function render(){
 
   if(S.popup) wrap.appendChild(renderPopup());
   if(S.cancelConfirm) wrap.appendChild(renderCancelModal());
+  if(S.taskOpen) wrap.appendChild(renderTaskOverlay());
 
   wrap.appendChild(el('div',{class:'ver'},[S.step<=1?'v'+VER:'']));
   appEl.appendChild(wrap);
@@ -891,6 +1493,18 @@ function renderCommonHdr(title){
   h.appendChild(brand);
   if(title){h.appendChild(el('div',{style:{fontSize:'16px',fontWeight:800,color:'#1a0000',flexShrink:0}},title));}
   const c=btn('hdr-call','🔔 직원호출');h.appendChild(c);
+  if(S.step===1){
+    const tBtn=el('button',{style:{
+      background:'#1e40af',border:'none',color:'#fff',
+      padding:'7px 13px',borderRadius:'18px',
+      fontSize:'13px',fontWeight:700,cursor:'pointer',
+      fontFamily:'inherit',display:'flex',alignItems:'center',gap:'5px',
+      flexShrink:0,marginLeft:'6px',
+    }});
+    tBtn.innerHTML='🧠 훈련과제';
+    tBtn.addEventListener('click',()=>setState({taskOpen:true}));
+    h.appendChild(tBtn);
+  }
   return h;
 }
 function renderMenuHdr(){ return renderCommonHdr(''); }
@@ -1732,8 +2346,304 @@ function renderDone(){
   wrap.appendChild(body);return wrap;
 }
 
+// ── 훈련과제 오버레이 ────────────────────────────────────
+const taskState = {
+  level: 1,
+  taskIndex: -1,
+  task: null,
+};
+
+// 4단계 난이도 정의
+const TASK_LEVELS = [
+  { id:1, label:'단계 1', desc:'1인 주문\n단순 메뉴' },
+  { id:2, label:'단계 2', desc:'2인 주문\n같은메뉴 포함' },
+  { id:3, label:'단계 3', desc:'가족 주문\n정보수정 포함' },
+  { id:4, label:'단계 4', desc:'가족 주문\n변경+취소+추가' },
+];
+
+// ── 내장 훈련 문제 은행 ────────────────────────────────────
+const TASK_BANK = {
+  1: [
+    { areas:['주의력','작업기억'], situation:'점심 시간에 혼자 분당버거에 들른 이순옥 씨가 주문을 하려 합니다.',
+      dialogue:[
+        {who:'이순옥',text:'불고기버거 단품으로 하나만 주세요. 음료는 콜라로요.'},
+      ],
+      missions:['이순옥 씨가 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'단품과 음료를 각각 따로 담아야 합니다.' },
+    { areas:['정보추출','순서수행'], situation:'퇴근 후 배가 고픈 박명수 씨가 분당버거에 왔습니다.',
+      dialogue:[
+        {who:'박명수',text:'치킨버거 세트로 주세요. 음료는 사이다로 바꿔주시고요.'},
+      ],
+      missions:['박명수 씨가 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'세트 주문 시 음료 변경에 주의하세요.' },
+    { areas:['주의력','작업기억'], situation:'오후에 간식이 먹고 싶었던 김정희 씨가 분당버거에 들렀습니다.',
+      dialogue:[
+        {who:'김정희',text:'저는 소프트 아이스크림이랑 감자튀김 중간 사이즈로 주세요.'},
+      ],
+      missions:['김정희 씨가 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'감자튀김 사이즈(M) 선택에 주의하세요.' },
+  ],
+  2: [
+    { areas:['작업기억','정보추출'], situation:'친구 둘이 함께 분당버거에 점심을 먹으러 왔습니다.',
+      dialogue:[
+        {who:'이미영',text:'저는 새우버거 세트 주세요. 음료는 제로콜라로요.'},
+        {who:'최수진',text:'저도 이미영 씨랑 같은 걸로 할게요.'},
+      ],
+      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'두 사람이 같은 메뉴를 2개 담아야 합니다.' },
+    { areas:['추론','작업기억'], situation:'동료 두 명이 점심을 먹으러 분당버거에 왔습니다.',
+      dialogue:[
+        {who:'박준호',text:'더블치즈버거 세트 주세요. 음료는 콜라로요.'},
+        {who:'한지수',text:'저는 버거는 박준호 씨랑 같은 걸로 하되, 음료는 오렌지주스로 해주세요.'},
+      ],
+      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'버거는 같아도 음료가 다릅니다.' },
+    { areas:['정보추출','순서수행'], situation:'어머니와 아들이 함께 분당버거에 왔습니다.',
+      dialogue:[
+        {who:'어머니',text:'나는 불고기버거 단품이랑 아이스 아메리카노 주세요.'},
+        {who:'아들',text:'저는 치킨버거 세트 주세요. 음료는 환타로요.'},
+      ],
+      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'단품+음료 조합과 세트 메뉴를 구분하세요.' },
+  ],
+  3: [
+    { areas:['실행기능','추론','정보추출'], situation:'가족 셋이 분당버거에 점심을 먹으러 왔습니다. 큰아이가 오늘 유치원에서 그림을 그렸다고 이야기하는 중입니다.',
+      dialogue:[
+        {who:'아버지',text:'나는 더블치즈버거 세트 주세요. 콜라로요.'},
+        {who:'어머니',text:'나는 새우버거 단품이요. 음료는 따뜻한 아메리카노 주세요.'},
+        {who:'딸',text:'저는 아버지랑 같은 거 주세요. 근데 음료는 사이다로 바꿔주세요.'},
+      ],
+      missions:['각 사람이 최종 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'딸은 버거만 아버지와 같고, 음료는 다릅니다.' },
+    { areas:['작업기억','실행기능'], situation:'할머니, 아들, 며느리 셋이 분당버거에 왔습니다. 할머니가 오늘 병원을 다녀왔다고 하십니다.',
+      dialogue:[
+        {who:'할머니',text:'나는 불고기버거 주세요. 콜라는 별로니까 사이다로 줘요.'},
+        {who:'아들',text:'저는 치킨버거 세트, 음료는 제로콜라요.'},
+        {who:'며느리',text:'저는 새우버거 단품이요. 음료는 따뜻한 아메리카노 주세요.'},
+      ],
+      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'할머니는 세트인지 단품인지 확인하세요.' },
+  ],
+  4: [
+    { areas:['문제해결','추론','작업기억'], situation:'가족 네 명이 분당버거에 주말 점심을 먹으러 왔습니다.',
+      dialogue:[
+        {who:'할아버지',text:'나는 불고기버거 세트 주세요. 콜라로요.'},
+        {who:'할머니',text:'나도 할아버지랑 같은 걸로요. 근데 음료는 오렌지주스로 바꿔줘요.'},
+        {who:'아들',text:'저는 더블치즈버거 세트 주세요. 아 잠깐, 치킨버거로 바꿔주세요. 음료는 사이다로요.'},
+        {who:'손자',text:'저는 치킨너겟이랑 콜라 주세요. 아이스크림도 하나 추가요!'},
+      ],
+      missions:['각 사람이 최종 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'아들이 버거를 더블치즈→치킨버거로 변경했습니다.' },
+    { areas:['추론','정보추출','문제해결'], situation:'가족 네 명이 분당버거에 왔습니다. 막내가 학교 이야기를 신나게 하는 중입니다.',
+      dialogue:[
+        {who:'어머니',text:'나는 새우버거 세트, 음료는 아이스 아메리카노요.'},
+        {who:'아버지',text:'나는 더블치즈버거 세트 주세요. 음료는 제로콜라로요.'},
+        {who:'큰딸',text:'저는 어머니랑 버거 같은 거로요, 음료는 환타로 해주세요.'},
+        {who:'막내',text:'어제 학교에서 달리기 1등 했어요! 저는 치킨너겟하고 딸기쉐이크 주세요. 아, 애플파이도요!'},
+      ],
+      missions:['각 사람이 최종 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'막내의 달리기 이야기는 주문과 무관합니다.' },
+  ],
+};
+
+
+async function generateTask() {
+  taskState.loading = true;
+  taskState.task = null;
+  refreshTaskPanel();
+
+  // 잠깐 로딩 효과 (0.3초)
+  await new Promise(r => setTimeout(r, 300));
+
+  try {
+    const pool = TASK_BANK[taskState.level] || [];
+    if(pool.length === 0) throw new Error('문제 없음');
+
+    // 이전과 다른 문제 선택
+    let idx;
+    do { idx = Math.floor(Math.random() * pool.length); }
+    while(pool.length > 1 && idx === taskState.taskIndex);
+    taskState.taskIndex = idx;
+
+    const picked = pool[idx];
+    taskState.task = {
+      level: taskState.level,
+      areas: picked.areas,
+      situation: picked.situation,
+      dialogue: picked.dialogue,
+      missions: picked.missions,
+      caution: picked.caution,
+    };
+  } catch(e) {
+    taskState.task = {error: true};
+  }
+
+  taskState.loading = false;
+  refreshTaskPanel();
+}
+
+function renderTaskOverlay() {
+  const ov = div('task-overlay');
+  ov.addEventListener('click', e => { if(e.target===ov) setState({taskOpen:false}); });
+
+  const panel = div('task-panel');
+
+  // 헤더
+  const hdr = div('task-panel-header');
+  const title = div('task-panel-title');
+  title.innerHTML = '🧠 인지재활 훈련 과제';
+  hdr.appendChild(title);
+  const closeBtn = el('button',{class:'task-panel-close'},'✕');
+  closeBtn.addEventListener('click', ()=>setState({taskOpen:false}));
+  hdr.appendChild(closeBtn);
+  panel.appendChild(hdr);
+
+  // 바디
+  const body = div('task-body');
+  panel.appendChild(body);
+  ov.appendChild(panel);
+
+  window._taskBody = body;
+  fillTaskBody(body);
+
+  return ov;
+}
+
+function refreshTaskPanel() {
+  const body = window._taskBody;
+  if(body) fillTaskBody(body);
+}
+
+function fillTaskBody(body) {
+  body.innerHTML = '';
+
+  // 난이도 선택
+  const lvBox = div('task-level-bar');
+  lvBox.appendChild(el('div',{class:'task-level-label'},'📊 난이도 선택'));
+  const lvRow = div('task-lv-row');
+  TASK_LEVELS.forEach(lv => {
+    const btn = el('button',{class:'task-lv-btn'+(taskState.level===lv.id?' on':'')});
+    btn.appendChild(el('span',{style:{fontSize:'14px',fontWeight:800}}, lv.label));
+    btn.appendChild(el('span',{class:'task-lv-desc'}, lv.desc));
+    btn.addEventListener('click',()=>{ taskState.level=lv.id; fillTaskBody(body); });
+    lvRow.appendChild(btn);
+  });
+  lvBox.appendChild(lvRow);
+  body.appendChild(lvBox);
+
+  // 생성 버튼
+  const genBtn = el('button',{class:'task-gen-btn'});
+  genBtn.innerHTML = taskState.loading
+    ? '<div class="task-loading-spinner"></div>&nbsp; 문제 생성 중...'
+    : '🧠 새 훈련 문제 생성하기';
+  genBtn.disabled = taskState.loading;
+  genBtn.addEventListener('click', generateTask);
+  body.appendChild(genBtn);
+
+  // 로딩
+  if(taskState.loading) {
+    const ld = div('task-loading');
+    ld.appendChild(el('div',{class:'task-loading-spinner'}));
+    ld.appendChild(el('div',{style:{fontSize:'15px',fontWeight:700,color:'#64748b'}},'AI가 문제를 만들고 있어요...'));
+    ld.appendChild(el('div',{style:{fontSize:'13px',color:'#94a3b8'}},'잠시만 기다려 주세요 😊'));
+    body.appendChild(ld);
+    return;
+  }
+
+  // 빈 상태
+  if(!taskState.task) {
+    const empty = div('task-empty');
+    empty.appendChild(el('div',{class:'task-empty-icon'},'🧠'));
+    empty.appendChild(el('div',{class:'task-empty-text'},'훈련 문제를 생성해보세요'));
+    empty.appendChild(el('div',{class:'task-empty-sub'},'위 버튼을 누르면 AI가\n새로운 문제를 만들어드립니다'));
+    body.appendChild(empty);
+    return;
+  }
+
+  // 오류
+  if(taskState.task.error) {
+    const errBox = div('task-card');
+    errBox.appendChild(el('div',{style:{textAlign:'center',padding:'20px',color:'#ef4444',fontSize:'14px',fontWeight:700,whiteSpace:'pre-line'}},
+      '⚠️ 문제 생성에 실패했습니다.\n다시 시도해주세요.'));
+    body.appendChild(errBox);
+    return;
+  }
+
+  const t = taskState.task;
+  const card = div('task-card');
+
+  // 카드 헤더
+  const ch = div('task-card-header');
+  ch.appendChild(el('span',{style:{fontSize:'20px'}},'📋'));
+  ch.appendChild(el('span',{class:'task-card-title'},'훈련 과제'));
+  const lvLabel = TASK_LEVELS[taskState.level-1];
+  ch.appendChild(el('span',{class:'task-badge task-badge-level'}, lvLabel.label));
+  card.appendChild(ch);
+
+  // 훈련 영역
+  if(t.areas?.length) {
+    const tags = div('task-area-tags');
+    t.areas.forEach(a => tags.appendChild(el('span',{class:'task-area-tag'},a)));
+    card.appendChild(tags);
+  }
+
+  // 상황
+  if(t.situation) {
+    const sit = div('task-situation');
+    sit.appendChild(el('div',{class:'task-section-title'},'📍 상황'));
+    sit.appendChild(el('div',{style:{whiteSpace:'pre-line',fontSize:'14px',lineHeight:'1.7'}}, t.situation));
+    card.appendChild(sit);
+  }
+
+  // 대화
+  if(t.dialogue?.length) {
+    const dial = div('task-dialogue');
+    dial.appendChild(el('div',{class:'task-section-title'},'💬 대화'));
+    t.dialogue.forEach(line => {
+      const row = div('task-dialogue-line');
+      row.appendChild(el('span',{class:'task-who'}, line.who));
+      row.appendChild(el('div',{class:'task-text'}, line.text));
+      dial.appendChild(row);
+    });
+    card.appendChild(dial);
+  }
+
+  // 미션
+  if(t.missions?.length) {
+    const mis = div('task-mission');
+    mis.appendChild(el('div',{class:'task-section-title'},'✅ 미션'));
+    t.missions.forEach((m,i) => {
+      const item = div('task-mission-item');
+      const num = div('task-mission-num'); num.textContent = i+1;
+      item.appendChild(num);
+      item.appendChild(el('span',{},m));
+      mis.appendChild(item);
+    });
+    card.appendChild(mis);
+  }
+
+  // 주의사항
+  if(t.caution) {
+    const note = div('task-note');
+    note.appendChild(el('div',{class:'task-section-title'},'⚠️ 주의사항'));
+    note.appendChild(el('div',{style:{fontSize:'13px'}}, t.caution));
+    card.appendChild(note);
+  }
+
+  body.appendChild(card);
+
+  // 힌트
+  const hint = div('task-hint');
+  hint.appendChild(el('div',{class:'task-hint-title'},'💡 이렇게 해보세요'));
+  hint.appendChild(el('div',{class:'task-hint-text'},
+    '① 대화를 읽고 각 사람의 주문을 추론해보세요\n② 이 창을 닫고 메뉴 탭에서 직접 주문을 입력하세요\n③ 장바구니에서 총 금액을 확인하세요'));
+  body.appendChild(hint);
+}
+
 // ── 시작 ─────────────────────────────────────────────────
 render();
+
+
 </script>
 </body>
 </html>
