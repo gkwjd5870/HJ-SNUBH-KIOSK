@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,viewport-fit=cover"/>
 <title>분당버거 키오스크</title>
 <style>
 
@@ -57,13 +57,34 @@ img{display:block}
 
 /* 단계 표시 바 */
 .step-bar{
-  background:#fafaf8;border-bottom:1px solid #f0ebe0;
-  padding:7px 14px;flex-shrink:0;
-  display:flex;align-items:center;gap:0;
+  background:#fff;border-bottom:2px solid #f0ebe0;
+  padding:0 8px;flex-shrink:0;height:52px;
+  display:flex;align-items:center;justify-content:center;gap:0;
 }
 .step-item{
-  display:flex;align-items:center;gap:4px;font-size:11px;color:#bbb;font-weight:600;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  flex:1;position:relative;
 }
+.step-num{
+  width:26px;height:26px;border-radius:50%;
+  background:#e2e8f0;color:#94a3b8;
+  font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all 0.2s;
+}
+.step-item.done .step-num{background:#22c55e;color:#fff;}
+.step-item.active .step-num{background:#e8100a;color:#fff;box-shadow:0 0 0 3px rgba(232,16,10,0.2);}
+.step-label{
+  font-size:10px;font-weight:700;color:#cbd5e1;
+  white-space:nowrap;transition:all 0.2s;
+}
+.step-item.done .step-label{color:#22c55e;}
+.step-item.active .step-label{color:#e8100a;}
+.step-line{
+  height:2px;flex:1;background:#e2e8f0;
+  margin-bottom:14px;transition:background 0.2s;
+}
+.step-line.done{background:#22c55e;}
 .step-item.active .step-num{background:#e8100a;color:#fff}
 .step-item.done .step-num{background:#22c55e;color:#fff}
 .step-num{
@@ -605,13 +626,34 @@ img{display:block}
 
 /* 단계 표시 바 */
 .step-bar{
-  background:#fafaf8;border-bottom:1px solid #f0ebe0;
-  padding:7px 14px;flex-shrink:0;
-  display:flex;align-items:center;gap:0;
+  background:#fff;border-bottom:2px solid #f0ebe0;
+  padding:0 8px;flex-shrink:0;height:52px;
+  display:flex;align-items:center;justify-content:center;gap:0;
 }
 .step-item{
-  display:flex;align-items:center;gap:4px;font-size:11px;color:#bbb;font-weight:600;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  flex:1;position:relative;
 }
+.step-num{
+  width:26px;height:26px;border-radius:50%;
+  background:#e2e8f0;color:#94a3b8;
+  font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all 0.2s;
+}
+.step-item.done .step-num{background:#22c55e;color:#fff;}
+.step-item.active .step-num{background:#e8100a;color:#fff;box-shadow:0 0 0 3px rgba(232,16,10,0.2);}
+.step-label{
+  font-size:10px;font-weight:700;color:#cbd5e1;
+  white-space:nowrap;transition:all 0.2s;
+}
+.step-item.done .step-label{color:#22c55e;}
+.step-item.active .step-label{color:#e8100a;}
+.step-line{
+  height:2px;flex:1;background:#e2e8f0;
+  margin-bottom:14px;transition:background 0.2s;
+}
+.step-line.done{background:#22c55e;}
 .step-item.active .step-num{background:#e8100a;color:#fff}
 .step-item.done .step-num{background:#22c55e;color:#fff}
 .step-num{
@@ -1220,6 +1262,194 @@ img{display:block}
 .task-hint-text{font-size:12px;color:#3b5bdb;line-height:1.7}
 
 
+/* ── 결제 팝업 오버레이 ─────────────────────────────────── */
+.pay-popup-overlay{
+  position:fixed;inset:0;background:rgba(10,0,0,0.55);
+  z-index:8000;display:flex;align-items:flex-end;justify-content:center;
+}
+.pay-popup-panel{
+  background:#f8faff;border-radius:24px 24px 0 0;
+  width:100%;max-width:480px;max-height:92vh;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 -8px 32px rgba(0,0,0,0.2);
+}
+.pay-popup-header{
+  background:#1a0000;padding:14px 16px;flex-shrink:0;
+  display:flex;align-items:center;gap:10px;
+}
+.pay-popup-header-title{
+  color:#fff;font-size:17px;font-weight:900;flex:1;
+}
+.pay-popup-header-amt{
+  color:#fbbf24;font-size:18px;font-weight:900;
+}
+.pay-popup-close{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,0.15);border:none;
+  color:#fff;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-family:inherit;flex-shrink:0;
+}
+.pay-popup-body{
+  flex:1;overflow-y:auto;padding:14px 14px 0;
+  display:flex;flex-direction:column;gap:12px;
+  scrollbar-width:thin;
+}
+.pay-popup-section{
+  background:#fff;border-radius:14px;padding:14px;
+  border:2px solid #f0ebe0;
+}
+.pay-popup-section-title{
+  font-size:13px;font-weight:800;color:#1a0000;margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+}
+.pay-popup-footer{
+  padding:12px 14px 20px;flex-shrink:0;
+  background:#f8faff;
+  border-top:1px solid #f0ebe0;
+}
+.pay-popup-confirm{
+  width:100%;padding:16px;background:#e8100a;color:#fff;
+  border:none;border-radius:14px;font-size:17px;font-weight:900;
+  cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 12px rgba(232,16,10,0.3);
+}
+.pay-popup-confirm:disabled{
+  background:#94a3b8;box-shadow:none;cursor:not-allowed;
+}
+
+
+/* ════════════════════════════════════════════════
+   반응형 레이아웃
+   폰 < 600px  |  태블릿 600~1024px  |  데스크톱 > 1024px
+   ════════════════════════════════════════════════ */
+
+/* ── 공통 기반 ── */
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── 데스크톱 / 태블릿: 가운데 카드 + 배경 ── */
+@media (min-width: 600px) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e8e0d4;
+    min-height: 100vh;
+    padding: 20px 0;
+    box-sizing: border-box;
+    overflow: auto;
+  }
+  #app {
+    max-width: 480px;
+    width: 480px;
+    min-height: min(92vh, 900px);
+    max-height: min(92vh, 900px);
+    height: min(92vh, 900px);
+    border-radius: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    overflow: hidden;
+    margin: auto;
+    flex-shrink: 0;
+  }
+}
+
+/* ── 태블릿 가로 (768px~) : 앱 조금 더 크게 ── */
+@media (min-width: 768px) {
+  #app {
+    max-width: 520px;
+    width: 520px;
+  }
+}
+
+/* ── 큰 태블릿 / iPad Pro (1024px~) ── */
+@media (min-width: 1024px) {
+  #app {
+    max-width: 560px;
+    width: 560px;
+    min-height: min(88vh, 960px);
+    max-height: min(88vh, 960px);
+    height: min(88vh, 960px);
+  }
+}
+
+/* ── 폴더블 펼쳤을 때 (540px 내외 세로) ── */
+@media (min-width: 600px) and (max-height: 620px) {
+  #app {
+    min-height: 98vh;
+    max-height: 98vh;
+    height: 98vh;
+    border-radius: 0;
+  }
+  body { padding: 0; }
+}
+
+/* ── 모바일 (600px 미만): 전체화면 ── */
+@media (max-width: 599px) {
+  #app {
+    max-width: 100%;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* ── 카드 그리드: 태블릿에서 3열 ── */
+@media (min-width: 600px) {
+  .card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── 폰트 스케일: 태블릿/데스크톱 ── */
+@media (min-width: 600px) {
+  .hdr-brand-name { font-size: 18px !important; }
+  .menu-card-name { font-size: 14px; }
+  .nav-btn { font-size: 15px; }
+  .cat-btn { font-size: 13px; }
+}
+
+/* ── 팝업/오버레이: 항상 #app 기준으로 ── */
+@media (min-width: 600px) {
+  .overlay, .phone-popup, .task-overlay,
+  .pay-popup-overlay, .cancel-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay > *, .phone-popup > *,
+  .task-overlay > *, .pay-popup-overlay > * {
+    max-width: 560px;
+    width: 100%;
+  }
+  /* 하단 슬라이드 팝업들은 하단 고정 유지 */
+  .task-panel, .pay-popup-panel {
+    border-radius: 24px 24px 0 0;
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .task-overlay, .pay-popup-overlay {
+    align-items: flex-end;
+  }
+}
+
+/* ── Safe area (노치/홈바) 대응 ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .nav-bar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pay-popup-footer {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
 </style>
 </head>
 <body>
@@ -1228,7 +1458,7 @@ img{display:block}
 
 
 'use strict';
-const VER='4.7';
+const VER='5.6';
 
 // ── 유틸 ──────────────────────────────────────────────────
 function el(tag,attrs,ch){
@@ -1386,7 +1616,10 @@ function initTops(id){
   const o={};TOPPINGS.forEach(t=>{o[t.id]=d[t.id]?1:0;});return o;
 }
 function calcTE(tops){
-  let e=0;TOPPINGS.forEach(t=>{if(tops[t.id]&&t.price>0)e+=t.price;});return e;
+  let e=0;TOPPINGS.forEach(t=>{
+    const qty=tops[t.id]||0;
+    if(qty>0&&t.price>0) e+=t.price*qty;
+  });return e;
 }
 
 // ── 이미지 렌더 ───────────────────────────────────────────
@@ -1435,6 +1668,7 @@ function initState(){
     pointPhone:'',
     pointPopup:false,
     taskOpen:false,
+    payStep:0,      // 0:닫힘 1:할인선택 2:포인트적립 3:결제수단
     popup:null,
   };
 }
@@ -1465,14 +1699,15 @@ function render(){
   appEl.innerHTML='';
   const wrap=el('div',{style:{width:'100%',height:'100%',display:'flex',flexDirection:'column',overflow:'hidden'}});
 
-  if(S.step===0){ wrap.appendChild(renderHome()); }
+  if(S.step===0){ wrap.appendChild(renderStepBar(0)); wrap.appendChild(renderHome()); }
   else if(S.step===1){ wrap.appendChild(renderMenuHdr()); wrap.appendChild(renderStepBar(1)); wrap.appendChild(renderMenuBody()); wrap.appendChild(renderCartPanel()); wrap.appendChild(renderNavBar()); }
   else if(S.step===2){ wrap.appendChild(renderPayHdr()); wrap.appendChild(renderStepBar(2)); wrap.appendChild(renderPayment()); }
-  else if(S.step===3){ wrap.appendChild(renderDoneHdr()); wrap.appendChild(renderDone()); }
+  else if(S.step===3){ wrap.appendChild(renderDoneHdr()); wrap.appendChild(renderStepBar(3)); wrap.appendChild(renderDone()); }
 
   if(S.popup) wrap.appendChild(renderPopup());
   if(S.cancelConfirm) wrap.appendChild(renderCancelModal());
   if(S.taskOpen) wrap.appendChild(renderTaskOverlay());
+  if(S.payStep>0) wrap.appendChild(renderPayStepPopup());
 
   wrap.appendChild(el('div',{class:'ver'},[S.step<=1?'v'+VER:'']));
   appEl.appendChild(wrap);
@@ -1489,7 +1724,13 @@ function renderCommonHdr(title){
   h.appendChild(logo);
   const brand=div('hdr-brand');
   brand.appendChild(el('div',{class:'hdr-brand-name'},'분당버거'));
-  brand.appendChild(el('div',{class:'hdr-brand-sub'},'분당서울대학교병원 고객식당'));
+  const subRow=div('');subRow.style.cssText='display:flex;align-items:center;gap:6px';
+  subRow.appendChild(el('div',{class:'hdr-brand-sub'},'분당서울대학교병원 고객식당'));
+  const verBadge=el('span',{});
+  verBadge.style.cssText='background:rgba(255,255,255,0.18);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;letter-spacing:0.5px';
+  verBadge.textContent='v'+VER;
+  subRow.appendChild(verBadge);
+  brand.appendChild(subRow);
   h.appendChild(brand);
   if(title){h.appendChild(el('div',{style:{fontSize:'16px',fontWeight:800,color:'#1a0000',flexShrink:0}},title));}
   const c=btn('hdr-call','🔔 직원호출');h.appendChild(c);
@@ -1518,15 +1759,34 @@ function renderDoneHdr(){
 
 function renderStepBar(cur){
   const bar=div('step-bar');
-  const steps=[{n:1,l:'메뉴 선택'},{n:2,l:'결제하기'},{n:3,l:'주문 완료'}];
+  // cur: 1=주문유형, 2=메뉴선택, 3=결제하기, 4=결제완료
+  // 표시: 1.주문유형  2.메뉴선택  3.주문확인  4.결제하기  5.결제완료
+  const steps=[
+    {n:1, l:'주문 유형'},
+    {n:2, l:'메뉴 선택'},
+    {n:3, l:'주문 확인'},
+    {n:4, l:'결제 하기'},
+    {n:5, l:'결제 완료'},
+  ];
+  // cur(내부) → 표시 단계 매핑
+  // step:0(홈)=1  step:1(메뉴)=2  step:2(결제팝업)=3~4  step:3(완료)=5
+  const displayCur = cur===0?1 : cur===1?2 : cur===2?4 : 5;
+
   steps.forEach((s,i)=>{
-    const cls='step-item'+(cur===s.n?' active':cur>s.n?' done':'');
-    const it=div(cls);
-    const nm=div('step-num',String(s.n));if(cur>s.n)nm.textContent='✓';
+    const done   = s.n < displayCur;
+    const active = s.n === displayCur;
+    const it = div('step-item'+(done?' done':active?' active':''));
+
+    const nm = div('step-num');
+    nm.textContent = done ? '✓' : String(s.n);
     it.appendChild(nm);
-    it.appendChild(el('span',{class:'step-label'},s.l));
+    it.appendChild(el('span',{class:'step-label'}, s.l));
     bar.appendChild(it);
-    if(i<steps.length-1)bar.appendChild(el('span',{class:'step-arrow'},'›'));
+
+    if(i < steps.length-1){
+      const line = div('step-line'+(done?' done':''));
+      bar.appendChild(line);
+    }
   });
   return bar;
 }
@@ -1715,7 +1975,7 @@ function renderNavBar(){
   [{icon:'🏠',label:'처음으로',act:()=>{if(q>0)setState({cancelConfirm:true});else setState({step:0,cart:[]})}},
    {icon:'←',label:'이전 단계',act:()=>{if(q>0)setState({cancelConfirm:true});else setState({step:0})}},
    {icon:'🎫',label:'쿠폰 사용',act:null,hi:true},
-   {icon:'🛒',label:'장바구니',act:()=>q>0&&setState({step:2}),badge:q},
+   {icon:'🛒',label:'주문하기',act:()=>q>0&&setState({payStep:1}),badge:q},
   ].forEach(b=>{
     const nb=el('button',{class:'nav-btn',style:{opacity:(!b.act&&!b.hi)?'0.4':'1'}});
     nb.appendChild(el('span',{class:'nav-btn-icon'},b.icon));
@@ -1943,15 +2203,83 @@ function renderToppingPopup(p){
   const ag=TOP_GROUPS.find(g=>g.id===activeGroup)||TOP_GROUPS[0];
   const groupToppings=TOPPINGS.filter(t=>ag.ids.includes(t.id));
   groupToppings.forEach(t=>{
-    const isOn=!!p.tops[t.id];
+    const qty = p.tops[t.id] || 0;
+    const isOn = qty > 0;
+    // 수량 추가 가능한 재료: 유료 재료 (치즈, 베이컨, 달걀, 할라피뇨, BBQ, 타르타르)
+    const stackable = t.price > 0;
     const row=el('button',{class:'top-add-row'+(isOn?' on':'')});
-    const chk=div('top-add-checkbox');chk.textContent=isOn?'✓':'';row.appendChild(chk);
-    row.appendChild(el('span',{class:'top-add-label'},t.name));
-    row.appendChild(el('span',{class:'top-add-price'},t.price>0?'+'+t.price.toLocaleString()+'원':'무료'));
-    row.addEventListener('click',()=>{
-      const nt=Object.assign({},p.tops,{[t.id]:p.tops[t.id]?0:1});
-      setState({popup:{...p,tops:nt,topGroup:activeGroup}});
-    });
+    row.style.cursor = 'default';
+
+    if(stackable && isOn){
+      // 수량 조절 모드: [−] 숫자 [+]
+      const qtyWrap = el('div',{style:{display:'flex',alignItems:'center',gap:'0',marginRight:'8px'}});
+      const minusBtn = el('button',{style:{
+        width:'28px',height:'28px',borderRadius:'50%',border:'2px solid #e8100a',
+        background:'#fff',color:'#e8100a',fontSize:'18px',fontWeight:900,
+        cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
+        fontFamily:'inherit',lineHeight:1,flexShrink:0,
+      }},'-');
+      minusBtn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const nq = Math.max(0, qty-1);
+        const nt=Object.assign({},p.tops,{[t.id]:nq});
+        setState({popup:{...p,tops:nt,topGroup:activeGroup}});
+      });
+      const qtyNum = el('span',{style:{
+        minWidth:'28px',textAlign:'center',fontSize:'16px',fontWeight:800,color:'#1a0000',
+      }},String(qty));
+      const plusBtn = el('button',{style:{
+        width:'28px',height:'28px',borderRadius:'50%',border:'2px solid #e8100a',
+        background:'#e8100a',color:'#fff',fontSize:'18px',fontWeight:900,
+        cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
+        fontFamily:'inherit',lineHeight:1,flexShrink:0,
+      }},'+');
+      plusBtn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const nq = Math.min(5, qty+1);
+        const nt=Object.assign({},p.tops,{[t.id]:nq});
+        setState({popup:{...p,tops:nt,topGroup:activeGroup}});
+      });
+      qtyWrap.appendChild(minusBtn);
+      qtyWrap.appendChild(qtyNum);
+      qtyWrap.appendChild(plusBtn);
+      row.appendChild(qtyWrap);
+    } else {
+      // 단순 체크박스 모드
+      const chk=div('top-add-checkbox');chk.textContent=isOn?'✓':'';row.appendChild(chk);
+      row.addEventListener('click',()=>{
+        const nq = isOn ? 0 : 1;
+        const nt=Object.assign({},p.tops,{[t.id]:nq});
+        setState({popup:{...p,tops:nt,topGroup:activeGroup}});
+      });
+    }
+
+    const labelWrap = el('div',{style:{display:'flex',flexDirection:'column',flex:1,gap:'2px'}});
+    labelWrap.appendChild(el('span',{class:'top-add-label'},t.name));
+    if(stackable && isOn && qty > 1){
+      labelWrap.appendChild(el('span',{style:{fontSize:'11px',color:'#e8100a',fontWeight:700}},
+        `×${qty} = +${(t.price*qty).toLocaleString()}원`));
+    }
+    row.appendChild(labelWrap);
+
+    const priceTag = el('span',{class:'top-add-price'});
+    if(t.price > 0){
+      priceTag.textContent = '+'+t.price.toLocaleString()+'원/개';
+      priceTag.style.color = '#e8100a';
+    } else {
+      priceTag.textContent = '무료';
+    }
+    row.appendChild(priceTag);
+
+    // 유료+미선택 → 클릭으로 1개 추가
+    if(stackable && !isOn){
+      row.style.cursor = 'pointer';
+      row.addEventListener('click',()=>{
+        const nt=Object.assign({},p.tops,{[t.id]:1});
+        setState({popup:{...p,tops:nt,topGroup:activeGroup}});
+      });
+    }
+
     wrap.appendChild(row);
   });
 
@@ -2017,9 +2345,14 @@ function renderToppingPopup(p){
       const tSummary=[];
       // 추가된 재료 (무료 포함 전부)
       TOPPINGS.forEach(t=>{
-        if(p.tops[t.id]){
+        const qty=p.tops[t.id]||0;
+        if(qty>0){
           const isNew=!defs[t.id];
-          if(isNew) tSummary.push(t.name+' 추가'+(t.price>0?' (+'+t.price.toLocaleString()+'원)':''));
+          if(isNew){
+            const qtyLabel = qty>1?` ×${qty}`:'';
+            const priceLabel = t.price>0?' (+'+((t.price*qty).toLocaleString())+'원)':'';
+            tSummary.push(t.name+qtyLabel+' 추가'+priceLabel);
+          }
         }
       });
       // 제거된 기본 재료
@@ -2363,89 +2696,218 @@ const TASK_LEVELS = [
 
 // ── 내장 훈련 문제 은행 ────────────────────────────────────
 const TASK_BANK = {
+
+  // ══ 단계 1 — 1인 주문 (할인·포인트·결제수단 없음) ══
   1: [
-    { areas:['주의력','작업기억'], situation:'점심 시간에 혼자 분당버거에 들른 이순옥 씨가 주문을 하려 합니다.',
+    { areas:['주의력','작업기억'],
+      situation:'점심시간에 혼자 분당버거에 들른 이순옥 씨가 키오스크 앞에 섰습니다.',
       dialogue:[
-        {who:'이순옥',text:'불고기버거 단품으로 하나만 주세요. 음료는 콜라로요.'},
+        {who:'이순옥', text:'불고기버거 단품 하나요. 음료는 콜라로 주세요.'},
       ],
-      missions:['이순옥 씨가 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'단품과 음료를 각각 따로 담아야 합니다.' },
-    { areas:['정보추출','순서수행'], situation:'퇴근 후 배가 고픈 박명수 씨가 분당버거에 왔습니다.',
+      missions:['이순옥 씨의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'단품과 음료는 따로 담아야 합니다.' },
+
+    { areas:['정보추출','순서수행'],
+      situation:'퇴근 후 배가 고픈 박명수 씨가 분당버거에 들렀습니다.',
       dialogue:[
-        {who:'박명수',text:'치킨버거 세트로 주세요. 음료는 사이다로 바꿔주시고요.'},
+        {who:'박명수', text:'치킨버거 세트로 주세요. 음료는 사이다로 바꿔주시고요.'},
       ],
-      missions:['박명수 씨가 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'세트 주문 시 음료 변경에 주의하세요.' },
-    { areas:['주의력','작업기억'], situation:'오후에 간식이 먹고 싶었던 김정희 씨가 분당버거에 들렀습니다.',
+      missions:['박명수 씨의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'세트 기본 음료(콜라)를 사이다로 변경해야 합니다.' },
+
+    { areas:['주의력','작업기억'],
+      situation:'오후 간식이 먹고 싶었던 김정희 씨가 분당버거에 들렀습니다.',
       dialogue:[
-        {who:'김정희',text:'저는 소프트 아이스크림이랑 감자튀김 중간 사이즈로 주세요.'},
+        {who:'김정희', text:'소프트아이스크림이랑 감자튀김 중간 사이즈로 주세요.'},
       ],
-      missions:['김정희 씨가 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'감자튀김 사이즈(M) 선택에 주의하세요.' },
+      missions:['김정희 씨의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'감자튀김 사이즈(M)를 정확히 선택하세요.' },
+
+    { areas:['주의력','정보추출'],
+      situation:'병원 검진을 마친 오태식 씨가 출출해서 분당버거에 들렀습니다.',
+      dialogue:[
+        {who:'오태식', text:'새우버거 세트 주세요. 음료는 제로콜라로 해주세요.'},
+      ],
+      missions:['오태식 씨의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'세트 음료를 제로콜라로 변경해야 합니다.' },
+
+    { areas:['작업기억','순서수행'],
+      situation:'산책 후 들른 윤미경 씨가 분당버거 키오스크 앞에 섰습니다.',
+      dialogue:[
+        {who:'윤미경', text:'더블치즈버거 단품이요. 그리고 치즈스틱도 하나 주세요.'},
+      ],
+      missions:['윤미경 씨의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'단품 버거와 사이드를 각각 따로 담아야 합니다.' },
   ],
+
+  // ══ 단계 2 — 2인 주문, 같은메뉴 포함 (할인·포인트·결제수단 없음) ══
   2: [
-    { areas:['작업기억','정보추출'], situation:'친구 둘이 함께 분당버거에 점심을 먹으러 왔습니다.',
+    { areas:['작업기억','정보추출'],
+      situation:'친구 둘이 함께 분당버거에 점심을 먹으러 왔습니다.',
       dialogue:[
-        {who:'이미영',text:'저는 새우버거 세트 주세요. 음료는 제로콜라로요.'},
-        {who:'최수진',text:'저도 이미영 씨랑 같은 걸로 할게요.'},
+        {who:'이미영', text:'저는 새우버거 세트 주세요. 음료는 제로콜라로요.'},
+        {who:'최수진', text:'저도 이미영 언니랑 똑같은 걸로 할게요.'},
       ],
-      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'두 사람이 같은 메뉴를 2개 담아야 합니다.' },
-    { areas:['추론','작업기억'], situation:'동료 두 명이 점심을 먹으러 분당버거에 왔습니다.',
+      missions:['각 사람의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'두 사람이 같은 메뉴이므로 수량을 2개로 담아야 합니다.' },
+
+    { areas:['추론','작업기억'],
+      situation:'동료 두 명이 점심을 먹으러 분당버거에 왔습니다.',
       dialogue:[
-        {who:'박준호',text:'더블치즈버거 세트 주세요. 음료는 콜라로요.'},
-        {who:'한지수',text:'저는 버거는 박준호 씨랑 같은 걸로 하되, 음료는 오렌지주스로 해주세요.'},
+        {who:'박준호', text:'더블치즈버거 세트 주세요. 음료는 콜라로요.'},
+        {who:'한지수', text:'저는 버거는 박준호 씨랑 같은 걸로 하되, 음료는 오렌지 주스로 해주세요.'},
       ],
-      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'버거는 같아도 음료가 다릅니다.' },
-    { areas:['정보추출','순서수행'], situation:'어머니와 아들이 함께 분당버거에 왔습니다.',
+      missions:['각 사람의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'버거는 같아도 음료가 서로 다릅니다.' },
+
+    { areas:['정보추출','순서수행'],
+      situation:'어머니와 아들이 함께 분당버거에 왔습니다.',
       dialogue:[
-        {who:'어머니',text:'나는 불고기버거 단품이랑 아이스 아메리카노 주세요.'},
-        {who:'아들',text:'저는 치킨버거 세트 주세요. 음료는 환타로요.'},
+        {who:'어머니', text:'나는 불고기버거 단품이랑 아이스 아메리카노 주세요.'},
+        {who:'아들',   text:'저는 치킨버거 세트요. 음료는 환타로 바꿔주세요.'},
       ],
-      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'단품+음료 조합과 세트 메뉴를 구분하세요.' },
+      missions:['각 사람의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'어머니는 단품+음료 조합, 아들은 세트입니다.' },
+
+    { areas:['추론','작업기억'],
+      situation:'부부가 함께 분당버거에 점심을 먹으러 왔습니다.',
+      dialogue:[
+        {who:'남편', text:'나는 불고기버거 세트 주세요. 콜라로요.'},
+        {who:'아내', text:'나도 남편이랑 같은 버거로 하되 음료는 오렌지 주스로 바꿔줘요.'},
+      ],
+      missions:['각 사람의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'버거는 같지만 음료가 다릅니다.' },
+
+    { areas:['정보추출','순서수행'],
+      situation:'직장 선후배가 분당버거에 점심을 먹으러 왔습니다.',
+      dialogue:[
+        {who:'김과장', text:'치킨버거 세트 주세요. 음료 사이다로요.'},
+        {who:'이대리', text:'저는 새우버거 단품이랑 치킨너겟, 콜라 한 잔이요.'},
+      ],
+      missions:['각 사람의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'이대리는 세트가 아닌 단품+사이드+음료 조합입니다.' },
+
+    { areas:['추론','작업기억'],
+      situation:'자매 둘이 쇼핑 후 분당버거에 들렀습니다.',
+      dialogue:[
+        {who:'언니', text:'저는 더블치즈버거 세트, 음료는 환타요.'},
+        {who:'동생', text:'언니, 나는 그냥 치즈스틱이랑 딸기쉐이크만 줘.'},
+      ],
+      missions:['각 사람의 주문 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
+      caution:'동생은 버거 없이 사이드와 디저트만 주문합니다.' },
   ],
+
+  // ══ 단계 3 — 3인 주문 + 재료옵션 + 할인·포인트·결제수단·결제자 추론 ══
   3: [
-    { areas:['실행기능','추론','정보추출'], situation:'가족 셋이 분당버거에 점심을 먹으러 왔습니다. 큰아이가 오늘 유치원에서 그림을 그렸다고 이야기하는 중입니다.',
+    { areas:['실행기능','추론','정보추출'],
+      situation:'가족 셋이 분당버거에 점심을 먹으러 왔습니다.',
       dialogue:[
-        {who:'아버지',text:'나는 더블치즈버거 세트 주세요. 콜라로요.'},
-        {who:'어머니',text:'나는 새우버거 단품이요. 음료는 따뜻한 아메리카노 주세요.'},
-        {who:'딸',text:'저는 아버지랑 같은 거 주세요. 근데 음료는 사이다로 바꿔주세요.'},
+        {who:'아버지', text:'더블치즈버거 세트 주세요. 콜라로요. 양파는 빼주세요.'},
+        {who:'어머니', text:'저는 새우버거 단품이랑 오렌지 주스요.'},
+        {who:'딸',     text:'저는 아버지랑 같은 버거로 하는데 음료는 사이다로요.'},
+        {who:'아버지', text:'내가 낼게. 나 LG야. 카드로 할게. 포인트는 010-2233-4455로 해줘.'},
       ],
-      missions:['각 사람이 최종 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'딸은 버거만 아버지와 같고, 음료는 다릅니다.' },
-    { areas:['작업기억','실행기능'], situation:'할머니, 아들, 며느리 셋이 분당버거에 왔습니다. 할머니가 오늘 병원을 다녀왔다고 하십니다.',
+      missions:['세 사람의 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'딸은 버거만 아버지와 같고 음료는 다릅니다. 아버지 버거에 양파 빼기 옵션을 적용하세요.' },
+
+    { areas:['작업기억','추론','실행기능'],
+      situation:'할머니와 손자, 손녀가 함께 분당버거에 왔습니다. 할머니가 오늘 72번째 생일이라고 하십니다.',
       dialogue:[
-        {who:'할머니',text:'나는 불고기버거 주세요. 콜라는 별로니까 사이다로 줘요.'},
-        {who:'아들',text:'저는 치킨버거 세트, 음료는 제로콜라요.'},
-        {who:'며느리',text:'저는 새우버거 단품이요. 음료는 따뜻한 아메리카노 주세요.'},
+        {who:'할머니', text:'나는 불고기버거 단품이랑 콜라 주세요.'},
+        {who:'손자',   text:'저는 치킨버거 세트, 환타요.'},
+        {who:'손녀',   text:'저는 새우버거 단품이랑 사이다요.'},
+        {who:'손자',   text:'제가 낼게요 할머니. 저 SKT예요. 카카오페이로 할게요. 포인트는 010-5544-7788이요.'},
       ],
-      missions:['각 사람이 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'할머니는 세트인지 단품인지 확인하세요.' },
+      missions:['세 사람의 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'할머니는 72세로 경로우대 조건이지만, 결제자인 손자가 SKT이므로 SKT 멤버십을 선택합니다.' },
+
+    { areas:['추론','정보추출','실행기능'],
+      situation:'직장 동료 세 명이 점심을 먹으러 왔습니다.',
+      dialogue:[
+        {who:'김과장', text:'치킨버거 세트, 콜라요. 내가 살게.'},
+        {who:'이대리', text:'감사합니다! 저는 더블치즈버거 세트, 제로콜라요. 치즈 추가해 주세요.'},
+        {who:'박인턴', text:'저는 불고기버거 단품이랑 사이다요.'},
+        {who:'김과장', text:'나 KT야. 네이버페이로 할게. 포인트는 010-9900-1122야.'},
+      ],
+      missions:['세 사람의 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'이대리 버거에 치즈 추가 옵션을 적용하세요.' },
+
+    { areas:['실행기능','추론','작업기억'],
+      situation:'세 자매가 분당버거에 왔습니다.',
+      dialogue:[
+        {who:'첫째', text:'나는 새우버거 세트, 음료는 오렌지 주스로요.'},
+        {who:'둘째', text:'나는 첫째 언니랑 같은 버거, 음료는 아이스 아메리카노로 바꿔줘.'},
+        {who:'막내', text:'저는 치킨버거 세트 먹을래요. 음료는 환타요!'},
+        {who:'첫째', text:'내가 살게. 나 만 27세 대학생이야. 삼성페이로 할게요. 포인트는 010-6677-2233이에요.'},
+      ],
+      missions:['세 사람의 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'첫째는 대학생이므로 학생 할인(5%)이 적용됩니다.' },
+
+    { areas:['추론','작업기억','실행기능'],
+      situation:'아버지, 어머니, 아들 셋이 나들이 후 분당버거에 들렀습니다.',
+      dialogue:[
+        {who:'아버지', text:'나는 불고기버거 세트, 콜라요. 피클은 빼주세요.'},
+        {who:'어머니', text:'저는 새우버거 단품이랑 사이다요.'},
+        {who:'아들',   text:'저는 더블치즈버거 세트, 제로콜라요. 할라피뇨 추가해 주세요.'},
+        {who:'어머니', text:'내가 낼게요. 나 SKT예요. 페이코로 할게요. 포인트는 010-8811-3344예요.'},
+      ],
+      missions:['세 사람의 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'아버지 버거에 피클 빼기, 아들 버거에 할라피뇨 추가 옵션을 적용하세요.' },
   ],
+
+  // ══ 단계 4 — 4인+, 메뉴변경·추가 + 할인·포인트·결제수단·결제자 추론 ══
   4: [
-    { areas:['문제해결','추론','작업기억'], situation:'가족 네 명이 분당버거에 주말 점심을 먹으러 왔습니다.',
+    { areas:['문제해결','추론','작업기억','실행기능'],
+      situation:'4인 가족이 분당버거에 주말 점심을 먹으러 왔습니다.',
       dialogue:[
-        {who:'할아버지',text:'나는 불고기버거 세트 주세요. 콜라로요.'},
-        {who:'할머니',text:'나도 할아버지랑 같은 걸로요. 근데 음료는 오렌지주스로 바꿔줘요.'},
-        {who:'아들',text:'저는 더블치즈버거 세트 주세요. 아 잠깐, 치킨버거로 바꿔주세요. 음료는 사이다로요.'},
-        {who:'손자',text:'저는 치킨너겟이랑 콜라 주세요. 아이스크림도 하나 추가요!'},
+        {who:'할아버지', text:'나는 불고기버거 세트, 콜라요. 피클은 빼주세요.'},
+        {who:'할머니',   text:'나도 할아버지랑 같은 걸로요. 음료는 오렌지 주스로 바꿔줘요.'},
+        {who:'아버지',   text:'더블치즈버거 세트 주세요. 아 잠깐, 치킨버거로 바꿔주세요. 사이다로요.'},
+        {who:'아들',     text:'저는 치킨너겟이랑 콜라, 소프트아이스크림도요.'},
+        {who:'아버지',   text:'내가 낼게. 나 만 67세야. 삼성페이로 할게. 포인트는 010-1234-5678이야.'},
       ],
-      missions:['각 사람이 최종 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'아들이 버거를 더블치즈→치킨버거로 변경했습니다.' },
-    { areas:['추론','정보추출','문제해결'], situation:'가족 네 명이 분당버거에 왔습니다. 막내가 학교 이야기를 신나게 하는 중입니다.',
+      missions:['네 사람의 최종 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'아버지가 더블치즈버거 → 치킨버거로 변경했습니다. 할아버지 버거에 피클 빼기를 적용하세요.' },
+
+    { areas:['추론','정보추출','문제해결','작업기억'],
+      situation:'친구 네 명이 분당버거에 모였습니다. 주문 중 메뉴가 바뀝니다.',
       dialogue:[
-        {who:'어머니',text:'나는 새우버거 세트, 음료는 아이스 아메리카노요.'},
-        {who:'아버지',text:'나는 더블치즈버거 세트 주세요. 음료는 제로콜라로요.'},
-        {who:'큰딸',text:'저는 어머니랑 버거 같은 거로요, 음료는 환타로 해주세요.'},
-        {who:'막내',text:'어제 학교에서 달리기 1등 했어요! 저는 치킨너겟하고 딸기쉐이크 주세요. 아, 애플파이도요!'},
+        {who:'민준', text:'더블치즈버거 세트, 콜라요. 치즈 추가해 주세요.'},
+        {who:'서연', text:'저는 새우버거 세트, 환타요.'},
+        {who:'태양', text:'저는 치킨버거 세트 주세요. 아 잠깐, 불고기버거로 바꿀게요. 음료는 사이다요.'},
+        {who:'지아', text:'저는 치즈스틱이랑 딸기쉐이크요.'},
+        {who:'민준', text:'내가 낼게. 나 대학생이야. 학생할인 되지? 페이코로 할게. 포인트는 010-3355-9977이야.'},
       ],
-      missions:['각 사람이 최종 주문한 메뉴를 정리하세요.','키오스크에 주문을 입력하세요.','장바구니를 확인하세요.','총 금액을 확인하세요.'],
-      caution:'막내의 달리기 이야기는 주문과 무관합니다.' },
+      missions:['네 사람의 최종 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'태양이 치킨버거 → 불고기버거로 변경했습니다. 민준 버거에 치즈 추가 옵션을 적용하세요.' },
+
+    { areas:['실행기능','문제해결','추론','작업기억'],
+      situation:'5인 가족이 주말 나들이 중 분당버거에 들렀습니다.',
+      dialogue:[
+        {who:'할아버지', text:'나는 불고기버거 세트, 콜라로 주세요. 피클은 빼줘요.'},
+        {who:'할머니',   text:'나는 새우버거 단품이랑 사이다요.'},
+        {who:'아빠',     text:'치킨버거 세트 주세요, 제로콜라로요. 치즈 추가해 주세요.'},
+        {who:'엄마',     text:'저는 더블치즈버거 세트요. 음료는 아빠랑 같은 걸로요. 양상추는 빼주세요.'},
+        {who:'아들',     text:'저는 치킨너겟이랑 오레오쉐이크 주세요. 에그타르트도 하나요.'},
+        {who:'아빠',     text:'내가 낼게. 나 KT야. 카카오페이로 할게. 포인트는 010-4422-8866이야.'},
+      ],
+      missions:['다섯 사람의 최종 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'엄마 음료는 아빠(제로콜라)와 같습니다. 할아버지 피클 빼기, 아빠 치즈 추가, 엄마 양상추 빼기 옵션에 주의하세요.' },
+
+    { areas:['추론','문제해결','실행기능','정보추출'],
+      situation:'가족 네 명이 분당버거에서 저녁을 먹기로 했습니다. 주문 중 여러 번 메뉴가 바뀝니다.',
+      dialogue:[
+        {who:'아버지', text:'나는 불고기버거 세트, 콜라로. BBQ소스 추가해 줘.'},
+        {who:'어머니', text:'저는 새우버거 세트, 오렌지 주스요. 피클 빼주세요.'},
+        {who:'아들',   text:'치킨버거 세트 주세요. 아, 잠깐요 — 더블치즈버거로 바꿔주세요. 제로콜라로요. 할라피뇨 추가해 주세요.'},
+        {who:'딸',     text:'저는 어머니랑 같은 버거로요. 음료는 사이다로요. 치즈 추가해 주세요.'},
+        {who:'아들',   text:'아 참, 소프트아이스크림도 하나 추가해 주세요.'},
+        {who:'어머니', text:'내가 낼게요. 나 만 55세고 LG 써요. 카드로 할게요. 포인트는 010-7733-5511이에요.'},
+      ],
+      missions:['네 사람의 최종 메뉴를 주문하세요.','알맞은 할인을 선택하세요.','누가 결제하나요?','포인트 번호를 입력하세요.','결제 수단을 선택하세요.','최종 금액을 확인하세요.'],
+      caution:'아들이 치킨버거 → 더블치즈버거로 변경 후 아이스크림을 추가했습니다. 딸은 어머니와 같은 버거(새우버거)입니다. 어머니는 만 55세로 경로우대 해당 없고 LG 멤버십이 적용됩니다.' },
   ],
 };
-
 
 async function generateTask() {
   taskState.loading = true;
@@ -2530,6 +2992,70 @@ function fillTaskBody(body) {
   });
   lvBox.appendChild(lvRow);
   body.appendChild(lvBox);
+
+  // ── 과정 흐름도
+  const flowBox = el('div',{style:{
+    background:'#fff',borderRadius:'14px',padding:'12px 14px',
+    border:'2px solid #e2e8f0',
+  }});
+  const flowTitle = el('div',{style:{
+    fontSize:'12px',fontWeight:700,color:'#64748b',marginBottom:'10px',
+  }}, '📋 이번 단계 수행 과정');
+  flowBox.appendChild(flowTitle);
+
+  const flow1 = [
+    {icon:'🛒', label:'메뉴 선택'},
+    {icon:'🧺', label:'장바구니\n확인'},
+    {icon:'✅', label:'완료'},
+  ];
+  const flow34 = [
+    {icon:'🛒', label:'메뉴 선택'},
+    {icon:'🧺', label:'장바구니\n확인'},
+    {icon:'🎫', label:'할인\n선택'},
+    {icon:'📲', label:'포인트\n적립'},
+    {icon:'💳', label:'결제수단\n선택'},
+    {icon:'✅', label:'완료'},
+  ];
+  const steps = (taskState.level <= 2) ? flow1 : flow34;
+
+  const flowRow = el('div',{style:{
+    display:'flex',alignItems:'flex-start',justifyContent:'center',gap:'0',
+  }});
+  steps.forEach((s, i) => {
+    // 스텝 아이템
+    const item = el('div',{style:{
+      display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',
+      minWidth: taskState.level<=2 ? '72px' : '52px',
+    }});
+    const circle = el('div',{style:{
+      width:'36px',height:'36px',borderRadius:'50%',
+      background: s.icon==='✅' ? '#22c55e' : '#e8100a',
+      color:'#fff',fontSize:'18px',
+      display:'flex',alignItems:'center',justifyContent:'center',
+      flexShrink:0,
+    }});
+    circle.textContent = s.icon;
+    item.appendChild(circle);
+    const lbl = el('div',{style:{
+      fontSize:'10px',fontWeight:700,color:'#475569',
+      textAlign:'center',lineHeight:'1.4',whiteSpace:'pre-line',
+    }});
+    lbl.textContent = s.label;
+    item.appendChild(lbl);
+    flowRow.appendChild(item);
+
+    // 화살표 (마지막 제외)
+    if(i < steps.length-1){
+      const arr = el('div',{style:{
+        fontSize:'14px',color:'#94a3b8',marginTop:'10px',flexShrink:0,
+        paddingBottom:'18px',
+      }});
+      arr.textContent = '→';
+      flowRow.appendChild(arr);
+    }
+  });
+  flowBox.appendChild(flowRow);
+  body.appendChild(flowBox);
 
   // 생성 버튼
   const genBtn = el('button',{class:'task-gen-btn'});
@@ -2640,10 +3166,254 @@ function fillTaskBody(body) {
   body.appendChild(hint);
 }
 
+// ── 결제 단계별 팝업 ─────────────────────────────────────
+// payStep: 1=할인선택  2=포인트적립  3=결제수단
+
+function renderPayStepPopup(){
+  const g = grand();
+  const disc = S.discount;
+  const discAmt = disc ? Math.floor(g * disc.rate / 100) : 0;
+  const finalAmt = g - discAmt;
+  const hasPhone = S.pointPhone.length === 11;
+
+  const STEPS = [
+    {step:1, icon:'🎫', title:'할인 선택'},
+    {step:2, icon:'📲', title:'포인트 적립'},
+    {step:3, icon:'💳', title:'결제 수단'},
+  ];
+  const cur = STEPS.find(s=>s.step===S.payStep);
+
+  const ov = div('pay-popup-overlay');
+  ov.addEventListener('click', e=>{ if(e.target===ov) setState({payStep:0}); });
+
+  const panel = div('pay-popup-panel');
+
+  // ── 헤더
+  const hdr = div('pay-popup-header');
+  const htitle = el('div',{style:{color:'#fff',fontSize:'17px',fontWeight:900,flex:1}});
+  htitle.textContent = cur.icon+' '+cur.title;
+  hdr.appendChild(htitle);
+  // 금액 표시
+  const hamt = el('div',{style:{color:'#fbbf24',fontSize:'16px',fontWeight:900,marginRight:'8px'}});
+  hamt.textContent = finalAmt.toLocaleString()+'원';
+  hdr.appendChild(hamt);
+  const closeBtn = el('button',{class:'pay-popup-close'},'✕');
+  closeBtn.addEventListener('click',()=>setState({payStep:0}));
+  hdr.appendChild(closeBtn);
+  panel.appendChild(hdr);
+
+  // ── 단계 인디케이터
+  const indRow = el('div',{style:{
+    display:'flex',alignItems:'center',justifyContent:'center',
+    gap:'6px',padding:'12px 16px',background:'#fff',
+    borderBottom:'1px solid #f0ebe0',flexShrink:0,
+  }});
+  STEPS.forEach((s,i)=>{
+    const active = s.step === S.payStep;
+    const done   = s.step < S.payStep;
+    // 원
+    const circle = el('div',{style:{
+      width:'28px',height:'28px',borderRadius:'50%',
+      background: done?'#22c55e': active?'#e8100a':'#e2e8f0',
+      color:'#fff',fontSize:'13px',fontWeight:800,
+      display:'flex',alignItems:'center',justifyContent:'center',
+      flexShrink:0,cursor:done?'pointer':'default',
+    }}, done?'✓':String(s.step));
+    if(done) circle.addEventListener('click',()=>setState({payStep:s.step}));
+    indRow.appendChild(circle);
+    // 라벨
+    const lbl = el('div',{style:{
+      fontSize:'12px',fontWeight: active?800:500,
+      color: active?'#e8100a': done?'#22c55e':'#94a3b8',
+    }}, s.title);
+    indRow.appendChild(lbl);
+    // 구분선
+    if(i < STEPS.length-1){
+      indRow.appendChild(el('div',{style:{
+        flex:1,height:'2px',
+        background: s.step < S.payStep?'#22c55e':'#e2e8f0',
+        borderRadius:'2px',
+      }},''));
+    }
+  });
+  panel.appendChild(indRow);
+
+  // ── 바디
+  const body = el('div',{style:{
+    flex:1,overflowY:'auto',padding:'16px',
+    display:'flex',flexDirection:'column',gap:'12px',
+    scrollbarWidth:'thin',
+  }});
+
+  // ══ STEP 1: 할인 선택 ══════════════════════════════════
+  if(S.payStep === 1){
+    const info = el('div',{style:{fontSize:'14px',color:'#64748b',marginBottom:'4px',lineHeight:'1.6'}});
+    info.textContent = '해당하는 할인을 선택하세요. 중복 적용은 불가합니다.';
+    body.appendChild(info);
+
+    const discGrid = div('discount-grid');
+    DISCOUNTS.forEach(d=>{
+      const isSel = S.discount && S.discount.id===d.id;
+      const btn = el('button',{class:'discount-btn'+(isSel?' sel':'')});
+      btn.appendChild(el('span',{class:'discount-btn-icon'},d.icon));
+      btn.appendChild(el('span',{class:'discount-btn-label'},d.label));
+      btn.appendChild(el('span',{class:'discount-btn-rate'},d.rate+'% 할인'));
+      btn.addEventListener('click',()=>setState({discount:isSel?null:d}));
+      discGrid.appendChild(btn);
+    });
+    const noneBtn = el('button',{class:'discount-btn-none'+(!S.discount?' sel':'')},'할인 없음');
+    noneBtn.addEventListener('click',()=>setState({discount:null}));
+    discGrid.appendChild(noneBtn);
+    body.appendChild(discGrid);
+
+    if(discAmt>0){
+      const badge = el('div',{style:{
+        padding:'10px 14px',background:'#fff5f5',borderRadius:'10px',
+        color:'#e8100a',fontSize:'13px',fontWeight:700,
+        border:'1.5px solid #fecaca',
+      }});
+      badge.textContent = '✓ '+disc.label+' '+disc.rate+'% 할인 적용 → -'+discAmt.toLocaleString()+'원';
+      body.appendChild(badge);
+    }
+  }
+
+  // ══ STEP 2: 포인트 적립 ═══════════════════════════════
+  if(S.payStep === 2){
+    const info = el('div',{style:{fontSize:'14px',color:'#64748b',lineHeight:'1.6',marginBottom:'4px'}});
+    info.textContent = '전화번호를 입력하면 결제 금액의 1%가 포인트로 적립됩니다.';
+    body.appendChild(info);
+
+    const ptBanner = el('button',{style:{
+      width:'100%',padding:'14px',
+      background:hasPhone?'#f0fdf4':'#fffbeb',
+      border:'2px solid '+(hasPhone?'#86efac':'#fde68a'),
+      borderRadius:'12px',cursor:'pointer',fontFamily:'inherit',
+      display:'flex',alignItems:'center',gap:'12px',
+    }});
+    ptBanner.appendChild(el('span',{style:{fontSize:'28px'}},hasPhone?'✅':'📱'));
+    const ptInner = el('div',{style:{flex:1,textAlign:'left'}});
+    ptInner.appendChild(el('div',{style:{
+      fontSize:'15px',fontWeight:700,
+      color:hasPhone?'#166534':'#92400e',
+    }}, hasPhone
+      ? S.pointPhone.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3')
+      : '번호 입력하기'));
+    if(hasPhone){
+      const earn = Math.floor(finalAmt*0.01);
+      ptInner.appendChild(el('div',{style:{fontSize:'12px',color:'#059669',marginTop:'3px'}},
+        `예상 적립 포인트 +${earn}P`));
+    } else {
+      ptInner.appendChild(el('div',{style:{fontSize:'12px',color:'#b45309',marginTop:'3px'}},
+        '적립하지 않으려면 다음 단계로 넘어가세요'));
+    }
+    ptBanner.appendChild(ptInner);
+    ptBanner.appendChild(el('span',{style:{fontSize:'18px',color:'#94a3b8'}},hasPhone?'✏️':'›'));
+    ptBanner.addEventListener('click',()=>setState({pointPopup:true}));
+    body.appendChild(ptBanner);
+    if(S.pointPopup) body.appendChild(renderPhonePopup());
+  }
+
+  // ══ STEP 3: 결제 수단 ═════════════════════════════════
+  if(S.payStep === 3){
+    [{id:'card',  label:'신용카드 / 체크카드',emoji:'💳',sub:'IC칩 · 마그네틱 · 비접촉'},
+     {id:'kakao', label:'카카오페이',          emoji:'💛',sub:'카카오페이 앱 QR'},
+     {id:'payco', label:'페이코',              emoji:'🔴',sub:'PAYCO 앱 바코드'},
+     {id:'naver', label:'네이버페이',          emoji:'💚',sub:'네이버페이 QR'},
+     {id:'samsung',label:'삼성페이',           emoji:'🔵',sub:'삼성페이 NFC · MST'},
+    ].forEach(m=>{
+      const sel = S.payMethod===m.id;
+      const b = div('pay-method'+(sel?' sel':''));
+      const ico=div('pay-method-ico'); ico.textContent=m.emoji; b.appendChild(ico);
+      const inf=div('pay-method-info');
+      inf.appendChild(el('div',{class:'pay-method-name'},m.label));
+      inf.appendChild(el('div',{class:'pay-method-sub'},m.sub));
+      b.appendChild(inf);
+      if(sel){const chk=div('pay-method-chk');chk.textContent='✓';b.appendChild(chk);}
+      b.addEventListener('click',()=>setState({payMethod:m.id}));
+      body.appendChild(b);
+    });
+
+    // 최종 금액 요약
+    const summary = el('div',{style:{
+      background:'#fafaf8',borderRadius:'12px',padding:'12px 14px',
+      border:'1.5px solid #f0ebe0',marginTop:'4px',
+    }});
+    const sRows = [
+      ['주문 금액', g.toLocaleString()+'원'],
+      ...(discAmt>0 ? [['할인 ('+disc.label+')', '-'+discAmt.toLocaleString()+'원']] : []),
+      ...(hasPhone ? [['포인트 적립', '+'+Math.floor(finalAmt*0.01)+'P']] : []),
+    ];
+    sRows.forEach(([k,v],i)=>{
+      const row=el('div',{style:{display:'flex',justifyContent:'space-between',
+        fontSize:'13px',color: i===sRows.length-1?'#e8100a':'#64748b',
+        fontWeight: i===sRows.length-1?700:400,
+        marginBottom: i<sRows.length-1?'6px':'0',
+      }});
+      row.appendChild(el('span',{},k));
+      row.appendChild(el('span',{},v));
+      summary.appendChild(row);
+    });
+    // 구분선
+    const hr=el('div',{style:{borderTop:'1px solid #e2e8f0',margin:'8px 0'}});
+    summary.appendChild(hr);
+    const totalRow=el('div',{style:{display:'flex',justifyContent:'space-between',
+      fontSize:'18px',fontWeight:900,color:'#1a0000',
+    }});
+    totalRow.appendChild(el('span',{},'최종 결제금액'));
+    totalRow.appendChild(el('span',{style:{color:'#e8100a'}},finalAmt.toLocaleString()+'원'));
+    summary.appendChild(totalRow);
+    body.appendChild(summary);
+  }
+
+  panel.appendChild(body);
+
+  // ── 푸터 버튼
+  const footer = el('div',{style:{
+    padding:'12px 14px 20px',flexShrink:0,
+    background:'#f8faff',borderTop:'1px solid #f0ebe0',
+    display:'flex',gap:'10px',
+  }});
+
+  if(S.payStep > 1){
+    const backBtn = el('button',{style:{
+      flex:1,padding:'15px',background:'#fff',
+      border:'2px solid #e2e8f0',borderRadius:'14px',
+      fontSize:'15px',fontWeight:700,color:'#64748b',
+      cursor:'pointer',fontFamily:'inherit',
+    }},'← 이전');
+    backBtn.addEventListener('click',()=>setState({payStep:S.payStep-1}));
+    footer.appendChild(backBtn);
+  }
+
+  const nextBtn = el('button',{style:{
+    flex:2,padding:'15px',
+    background: S.payStep===3 ? (S.payMethod?'#e8100a':'#94a3b8') : '#e8100a',
+    color:'#fff',border:'none',borderRadius:'14px',
+    fontSize:'16px',fontWeight:900,
+    cursor: S.payStep===3&&!S.payMethod ? 'not-allowed':'pointer',
+    fontFamily:'inherit',
+    boxShadow: S.payStep===3&&!S.payMethod ? 'none':'0 4px 12px rgba(232,16,10,0.25)',
+  }});
+
+  if(S.payStep < 3){
+    nextBtn.textContent = S.payStep===1&&!S.discount ? '할인 없이 다음 →' : '다음 →';
+    nextBtn.addEventListener('click',()=>setState({payStep:S.payStep+1}));
+  } else {
+    nextBtn.textContent = S.payMethod
+      ? `결제하기 ${finalAmt.toLocaleString()}원 →`
+      : '결제 수단을 선택해주세요';
+    nextBtn.disabled = !S.payMethod;
+    nextBtn.addEventListener('click',()=>{
+      if(S.payMethod) setState({payStep:0, step:3});
+    });
+  }
+  footer.appendChild(nextBtn);
+  panel.appendChild(footer);
+  ov.appendChild(panel);
+  return ov;
+}
 // ── 시작 ─────────────────────────────────────────────────
 render();
-
-
 </script>
 </body>
 </html>
